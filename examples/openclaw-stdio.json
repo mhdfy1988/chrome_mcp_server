@@ -1,0 +1,15 @@
+{
+  "command": "node",
+  "args": [
+    "D:/C_Project/chrome_mcp_server/dist/index.js",
+    "--transport",
+    "stdio"
+  ],
+  "cwd": "D:/C_Project/chrome_mcp_server",
+  "env": {
+    "CHROME_HEADLESS": "false",
+    "CHROME_CHANNEL": "chrome",
+    "CHROME_USER_DATA_DIR": "D:/C_Project/chrome_mcp_server/.chrome-profile-openclaw"
+  },
+  "connectionTimeoutMs": 30000
+}

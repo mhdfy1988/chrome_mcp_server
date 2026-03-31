@@ -1,0 +1,34 @@
+{
+  "name": "chrome_mcp_server",
+  "version": "1.0.0",
+  "description": "用于 Codex 和 OpenClaw 的 Chrome 浏览器 MCP Server",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev:stdio": "tsx src/index.ts --transport stdio",
+    "dev:http": "tsx src/index.ts --transport http",
+    "start:stdio": "node dist/index.js --transport stdio",
+    "start:http": "node dist/index.js --transport http",
+    "openclaw:set:stdio": "node scripts/openclaw-mcp-set.mjs chrome-browser examples/openclaw-stdio.json",
+    "openclaw:set:http": "node scripts/openclaw-mcp-set.mjs chrome-browser examples/openclaw-http.json"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "express": "^5.2.1",
+    "puppeteer-core": "^24.40.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.10.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

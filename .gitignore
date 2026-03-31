@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.chrome-profile/
+.chrome-profile-*/
+.venv/
+.venv-win/
+npm-debug.log*
+docs/baidu-home-smoke-test.png
+docs/baidu-gold-search-result.png
+docs/baidu-gold-search-fullpage.png
+docs/bilibili-python-after-click.png
+docs/bilibili-python-after-click-v2.png
+docs/bilibili-python-search.png

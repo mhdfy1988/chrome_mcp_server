@@ -1,0 +1,11 @@
+[mcp_servers.chrome_browser]
+command = "node"
+args = ["D:/C_Project/chrome_mcp_server/dist/index.js", "--transport", "stdio"]
+cwd = "D:/C_Project/chrome_mcp_server"
+startup_timeout_sec = 20
+tool_timeout_sec = 120
+
+[mcp_servers.chrome_browser.env]
+CHROME_HEADLESS = "false"
+CHROME_CHANNEL = "chrome"
+CHROME_USER_DATA_DIR = "D:/C_Project/chrome_mcp_server/.chrome-profile"

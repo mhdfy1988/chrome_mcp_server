@@ -1,0 +1,2495 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="cn" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <!-- jqGrid组件基础样式包-必要 -->
+    <link rel="stylesheet" href="jqgrid/css/ui.jqgrid.css"/>
+
+    <!-- jqGrid主题包-非必要 -->
+    <!-- 在jqgrid/css/css这个目录下还有其他的主题包，可以尝试更换看效果 -->
+    <link rel="stylesheet" href="jqgrid/css/css/redmond/jquery-ui-1.8.16.custom.css"/>
+
+    <!-- jquery插件包-必要 -->
+    <!-- 这个是所有jquery插件的基础，首先第一个引入 -->
+    <script type="text/javascript" src="js/jquery-1.7.1.js"></script>
+    <script src="js/jquery.base64.js" type="text/javascript"></script>
+
+    <script src="simpleAlert/js/simpleAlert.js"></script>
+    <link rel="stylesheet" href="loading/css/animate.css">
+    <link rel="stylesheet" href="loading/css/global.css">
+    <link rel="stylesheet" href="loading/css/loading.css">
+
+
+    <script type="text/javascript" src="js/jquery.cookie.js"></script>
+    <!-- jqGrid插件包-必要 -->
+    <script type="text/javascript" src="jqgrid/js/jquery.jqGrid.src.js"></script>
+
+    <!-- jqGrid插件的多语言包-非必要 -->
+    <!-- 在jqgrid/js/i18n下还有其他的多语言包，可以尝试更换看效果 -->
+    <script type="text/javascript" src="jqgrid/js/i18n/grid.locale-cn.js"></script>
+
+
+    <link rel="stylesheet" href="syalert/syalert.min.css"/>
+    <link rel="stylesheet" type="text/css" href="xcconfirm/xcConfirm.css"/>
+
+    <script src="syalert/syalert.min.js"></script>
+
+    <link rel="stylesheet" href="step/style.css"/>
+
+
+    <script type="text/javascript" charset="utf-8" src="ueditor/ueditor.config.js"></script>
+    <script type="text/javascript" charset="utf-8" src="ueditor/editor_api.js"></script>
+    <script src="xcconfirm/xcConfirm.js" type="text/javascript" charset="utf-8"></script>
+
+    <script src="loading/js/loading.js"></script>
+
+
+    <link rel="stylesheet" href="simpleAlert/css/simpleAlert.css">
+
+    <link rel="stylesheet" type="text/css" href="easyui/themes/default/easyui.css">
+    <link rel="stylesheet" type="text/css" href="easyui/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="easyui/demo.css">
+    <!--    <script type="text/javascript" src="easyui/jquery.min.js"></script>-->
+    <script type="text/javascript" src="easyui/jquery.easyui.min.js"></script>
+
+    <style type="text/css">
+
+
+        .sgBtn {
+            width: 135px;
+            height: 35px;
+            line-height: 35px;
+            margin-left: 10px;
+            margin-top: 10px;
+            text-align: center;
+            background-color: #0095D9;
+            color: #FFFFFF;
+            float: left;
+            border-radius: 5px;
+        }
+
+        .nice-select input {
+            outline: none;
+            cursor: pointer;
+            width: 14em;
+            height: 1.8em;
+            font-size: 1em;
+            border: 1px solid #000;
+            background: url(image/icon.png) no-repeat scroll right center transparent;
+            background-position: 96% 50%;
+            padding: 0 10px;
+            -webkit-border-radius: .3em;
+            -moz-border-radius: .3em;
+            border-radius: .3em;
+            /*position: absolute;*/
+            line-height: 1.8em;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nice-input {
+            outline: none;
+            cursor: pointer;
+            width: 14em;
+            height: 1.8em;
+            font-size: 1em;
+            border: 1px solid #000;
+            background-position: 96% 50%;
+            padding: 0 10px;
+            -webkit-border-radius: .3em;
+            -moz-border-radius: .3em;
+            border-radius: .3em;
+            /*position: absolute;*/
+            line-height: 1.8em;
+            margin: 0;
+            padding: 0;
+        }
+
+        ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nice-select {
+            position: relative;
+            width: 14em;
+            /*top: 2em;*/
+            /*margin: 0 auto;*/
+            /*box-shadow: 0 3px 5px #999;*/
+            -webkit-border-radius: .3em;
+            -moz-border-radius: .3em;
+            border-radius: .3em;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nice-select ul {
+            display: none;
+            border: 1px solid #d5d5d5;
+            width: 13.9em;
+            position: absolute;
+            top: 1.8em;
+            overflow: hidden;
+            background-color: #fff;
+            max-height: 150px;
+            overflow-y: auto;
+            border-top: 0;
+            z-index: 10001;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nice-select ul li {
+            height: 15px;
+            /*line-height: 2em;*/
+            overflow: hidden;
+            padding: 0 10px;
+            cursor: pointer;
+            border-top: 1px solid #d5d5d5;
+            margin: 0;
+            font-size: 12px;
+            padding: 0;
+        }
+
+        .nice-select ul li.on {
+            background-color: #e0e0e0;
+            margin: 0;
+            padding: 0;
+        }
+
+        .title {
+            text-align: center;
+            padding: 10px 0;
+        }
+
+        .input {
+            height: 28px;
+            width: 200px;
+            outline: none;
+            padding: 0 5px;
+            -webkit-border-radius: .3em;
+            -moz-border-radius: .3em;
+            border-radius: .3em;
+            border: 1px solid #000;
+        }
+
+        .btn {
+            height: 28px;
+            width: 80px;
+            cursor: pointer;
+            -webkit-border-radius: .3em;
+            -moz-border-radius: .3em;
+            border-radius: .3em;
+            border: 1px solid #c3c3c3;
+        }
+
+
+        input::-ms-clear {
+            display: none;
+        }
+
+        .ui-jqgrid tr.jqgrow td {
+            white-space: normal !important;
+            height: auto;
+            word-break: break-all;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        body {
+            font-size: 12px;
+            color: #666;
+            text-align: left;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .tabbox {
+            width: 1100px;
+            background: #f0f0f0;
+            font-family: '微软雅黑';
+        }
+
+        .tabbox .tab {
+            overflow: hidden;
+            background: #ccc;
+        }
+
+        .tabbox .tab a {
+            display: block;
+            padding: 10px 20px;
+            float: left;
+            text-decoration: none;
+            color: #333;
+        }
+
+        .tabbox .tab a:hover {
+            background: #E64E3F;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .tabbox .tab a.on {
+            background: #E64E3F;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .tabbox .content {
+            overflow: hidden;
+            padding: 10px;
+        }
+
+        .tabbox .content li.tabboxli {
+            display: none;
+        }
+
+
+        .differentFlag {
+            color: #8b8989;
+        }
+
+    </style>
+
+    <script>
+
+
+
+
+
+        var time1;
+        var index = 0;
+        var id;
+        var islogin = false;
+        var isokmoniterserver = false;
+
+
+        function loadingStart() {
+            $('body').loading({
+                loadingWidth: 120,
+                title: '',
+                name: 'test',
+                discription: '',
+                direction: 'column',
+                type: 'origin',
+                // originBg:'#71EA71',
+                originDivWidth: 40,
+                originDivHeight: 40,
+                originWidth: 6,
+                originHeight: 6,
+                smallLoading: false,
+                loadingMaskBg: 'rgba(0,0,0,0.2)'
+            });
+        }
+
+        function freshmoniterlog(title, message) {
+            var option = {
+                title: title,
+                refresh: function () {
+                    $.ajax({
+                        type: "post",
+                        url: "/ServiceMonitoringManagementController/getmoniterlog",
+                        dataType: "text",
+                        timeout: 30000,
+                        async: true,
+                        success: function (data) {
+                            $(".txtBox p").html(data);
+                        },
+                        complete: function (XMLHttpRequest, status) {
+                            if (status == 'timeout') {
+                                alert("日志请求超时！");
+                            }
+                        }
+                    });
+                }
+            }
+            window.wxc.xcConfirm(message, "refresh", option);
+        };
+
+
+        function alertstr(title, message) {
+            var option = {
+                title: title,
+                onOk: function () {
+                    // console.log("确认啦");
+                }
+            }
+            window.wxc.xcConfirm(message, "custom", option);
+        };
+
+
+        $(function () {
+            refreshiptagselect();
+            test();
+
+
+            webonmousemove();
+            GetGrid();
+            GetGrid2();
+            stepinit();
+            selectinit();
+
+            ueditorinit();
+            serviceportinit();
+
+
+            $("#logout").click(function (e) {
+                $("#tokenkey").val('');
+                $.cookie('token', null);
+                test();
+            });
+            $("#login").click(function (e) {
+                loginfun();
+            });
+            $("#download").click(function (e) {
+                window.location.href = "/ServiceMonitoringManagementController/exportAllServerInfo.xls";
+            });
+
+
+            $("#setupmoniter").click(function (e) {
+                $.ajax({
+                    type: "post",
+                    url: "/ServiceMonitoringManagementController/setupmoniter?" + new Date().getTime(),
+                    dataType: "text",
+                    success: function (data) {
+                        // alert(data);
+                    }
+                });
+                readmoniterLog();
+            });
+
+
+            $("#serviceid").change(function (e) {
+                $.ajax({
+                    type: "post",
+                    url: "/ServiceMonitoringManagementController/token?token=" + escape(token),
+                    dataType: "text",
+                    async: false,
+                    success: function (data) {
+                        if (data == "") {
+                            $("#tokenkey").attr("readOnly", false);
+                            $("#logout").hide();
+                            $("#login").show();
+                            $.cookie('token', null);
+                            islogin = false;
+                            $("#gridTable").trigger("reloadGrid");
+                            // alert("【"+token+"】登录失效，受限访问！");
+                        } else {
+                            $("#tokenkey").val(data);
+                            $("#tokenkey").attr("readOnly", true);
+                            $("#logout").show();
+                            $("#login").hide();
+                            $.cookie('token', data);
+                            islogin = true;
+                            $("#gridTable").trigger("reloadGrid");
+                        }
+                    },
+                    error: function (data) {
+                        $("#tokenkey").attr("readOnly", false);
+                        $("#logout").hide();
+                        $("#login").show();
+                        $.cookie('token', null);
+                        islogin = false;
+                        $("#gridTable").trigger("reloadGrid");
+                         //alert("系统错误，受限访问！")
+                    }
+                });
+            });
+
+            tabboxinit();
+
+
+        });
+
+
+        //标签切换
+        function tabboxinit() {
+            $(".tabbox .tab a").click(function () {
+                $(this).addClass('on').siblings().removeClass('on');
+                var index = $(this).index();
+                number = index;
+                $('.tabbox .content li.tabboxli').hide();
+                $('.tabbox .content li.tabboxli:eq(' + index + ')').show();
+            });
+
+            $('.tabbox .tab a:eq(' + 0 + ')').addClass('on').siblings().removeClass('on');
+            $('.tabbox .content ul li.tabboxli:eq(' + 0 + ')').show().siblings().hide();
+        }
+
+
+        function loginfun() {
+            var token = $.cookie('token');
+            if (token == undefined || token == "" || token == "null") {
+                token = $("#tokenkey").val();
+            }
+            $.ajax({
+                type: "post",
+                url: "/ServiceMonitoringManagementController/token?token=" + escape(token),
+                dataType: "text",
+                async: false,
+                success: function (data) {
+                    if (data == "") {
+                        $("#tokenkey").attr("readOnly", false);
+                        $("#logout").hide();
+                        $("#login").show();
+                        $.cookie('token', null);
+                        islogin = false;
+                        $("#gridTable").trigger("reloadGrid");
+                        alert("【"+token+"】登录失效，受限访问！");
+                        $("#tokenkey").val("");
+                    } else {
+                        $("#tokenkey").val(data);
+                        $("#tokenkey").attr("readOnly", true);
+                        $("#logout").show();
+                        $("#login").hide();
+                        $.cookie('token', data);
+                        islogin = true;
+                        $("#gridTable").trigger("reloadGrid");
+                    }
+                },
+                error: function (data) {
+                    $("#tokenkey").attr("readOnly", false);
+                    $("#logout").hide();
+                    $("#login").show();
+                    $.cookie('token', null);
+                    islogin = false;
+                    $("#gridTable").trigger("reloadGrid");
+                    $("#tokenkey").val("");
+                    alert("系统错误，受限访问！")
+                }
+            });
+        }
+
+
+        function test() {
+            var token = $.cookie('token');
+            if (token == undefined || token == "" || token == "null") {
+                token = $("#tokenkey").val();
+            }
+            $.ajax({
+                type: "post",
+                url: "/ServiceMonitoringManagementController/token?token=" + escape(token),
+                dataType: "text",
+                async: false,
+                success: function (data) {
+                    if (data == "") {
+                        $("#tokenkey").attr("readOnly", false);
+                        $("#logout").hide();
+                        $("#login").show();
+                        $.cookie('token', null);
+                        islogin = false;
+                        $("#gridTable").trigger("reloadGrid");
+                        $("#tokenkey").val("");
+                    } else {
+                        $("#tokenkey").val(data);
+                        $("#tokenkey").attr("readOnly", true);
+                        $("#logout").show();
+                        $("#login").hide();
+                        $.cookie('token', data);
+                        islogin = true;
+                        $("#gridTable").trigger("reloadGrid");
+                    }
+                },
+                error: function (data) {
+                    $("#tokenkey").attr("readOnly", false);
+                    $("#logout").hide();
+                    $("#login").show();
+                    $.cookie('token', null);
+                    islogin = false;
+                    $("#gridTable").trigger("reloadGrid");
+                    $("#tokenkey").val("");
+                }
+            });
+        }
+
+        var M = {}
+
+
+        function updateserver(pid, hostip, typeid) {
+            var serverversion = 0;
+            var serverversionname = "未知版本";
+            var newversion = 0;
+            var newversionname = "未知版本";
+            var iptag = $("#iptag").val();
+            var datar = "";
+            //获取版本
+            $.ajax({
+                type: "post",
+                url: "/ServiceMonitoringManagementController/getserverversion?pid=" + pid + "&type=" + typeid + "&hostip=" + hostip + "&iptag=" + iptag,
+                dataType: "text",
+                timeout: 5000,
+                async: false,
+                success: function (data) {
+                    datar = data;
+                    var tmp1 = data.split(",");
+                    if (tmp1.length > 1) {
+                        var tmp2 = tmp1[0].split("\|");
+                        serverversion = parseInt(tmp2[0]);
+                        serverversionname = tmp2[1];
+
+                        var tmp3 = tmp1[1].split("\|");
+                        newversion = parseInt(tmp3[0]);
+                        newversionname = tmp3[1];
+                    }
+                }
+            });
+            if (serverversion < newversion) {
+                var contentstr = "是否将[" + serverversionname + "]，<br/>替换为[" + newversionname + "]？<br/>点击【替换】按钮开始更新！";
+                var dblChoseAlert = simpleAlert_g({
+                    "title": "更新服务",
+                    "content": contentstr,
+                    "buttons": {
+                        "替换": function () {
+                            $.ajax({
+                                type: "post",
+                                url: "/ServiceMonitoringManagementController/updateserverver?pid=" + pid + "&type=" + typeid + "&hostip=" + hostip + "&iptag=" + iptag,
+                                dataType: "text",
+                                success: function (data) {
+                                    alert(data);
+                                }
+                            });
+                            dblChoseAlert.close();
+                        },
+                        "取消": function () {
+                            dblChoseAlert.close();
+                        }
+                    }
+                });
+            } else if (serverversion == newversion) {
+                var contentstr = "已是最新[" + serverversionname + "]！";
+                var dblChoseAlert = simpleAlert_g({
+                    "title": "更新服务",
+                    "content": contentstr,
+                    "buttons": {
+                        "关闭": function () {
+                            dblChoseAlert.close();
+                        }
+                    }
+                });
+            } else {
+                var contentstr = "是否将[" + serverversionname + "]，<br/>强制替换为[" + newversionname + "]？<br/>点击【强制替换】按钮开始替换！";
+                var dblChoseAlert = simpleAlert({
+                    "title": "强制更新",
+                    "content": contentstr,
+                    "buttons": {
+                        "强制替换": function () {
+                            var dblChoseAlert2 = simpleAlert({
+                                "title": "强制更新",
+                                "content": "是否强制替换为【" + newversionname + "】?",
+                                "buttons": {
+                                    "强制替换": function () {
+                                        $.ajax({
+                                            type: "post",
+                                            url: "/ServiceMonitoringManagementController/updateserverver?pid=" + pid + "&type=" + typeid + "&hostip=" + hostip + "&iptag=" + iptag,
+                                            dataType: "text",
+                                            success: function (data) {
+                                                alert(data);
+                                            }
+                                        });
+                                        dblChoseAlert2.close();
+                                        dblChoseAlert.close();
+                                    },
+                                    "取消": function () {
+                                        dblChoseAlert2.close();
+                                        dblChoseAlert.close();
+                                    }
+                                }
+                            });
+                            // dblChoseAlert.close();
+                        },
+                        "取消": function () {
+                            dblChoseAlert.close();
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateairobotgo(hostip) {
+            var serverversion = 0;
+            var serverversionname = "";
+            var newversion = 0;
+            var newversionname = "";
+            //获取服务器版本
+            $.ajax({
+                type: "post",
+                url: "/ServiceMonitoringManagementController/getserverairobotversion?hostip=" + hostip,
+                dataType: "text",
+                async: false,
+                success: function (data) {
+                    var tmp = data.split("\|");
+                    if (tmp.length > 1) {
+                        serverversion = parseInt(tmp[1]);
+                        serverversionname = tmp[0];
+                    }
+                }
+            });
+            //获取最新版本
+            $.ajax({
+                type: "post",
+                url: "/ServiceMonitoringManagementController/getnewairobotversion",
+                dataType: "text",
+                async: false,
+                success: function (data) {
+                    var tmp = data.split("\|");
+                    if (tmp.length > 1) {
+                        newversion = parseInt(tmp[1]);
+                        newversionname = tmp[0];
+                    }
+                }
+            });
+            if (serverversion < newversion) {
+                var dblChoseAlert = simpleAlert({
+                    "title": "更新AI机器人",
+                    "content": "服务器版本为<" + serverversionname + ">，最新版本为<" + newversionname + ">,点击【更新】按钮开始更新！",
+                    "buttons": {
+                        "更新": function () {
+                            $.ajax({
+                                type: "post",
+                                url: "/ServiceMonitoringManagementController/updateairobotgo?hostip=" + hostip,
+                                dataType: "text",
+                                success: function (data) {
+                                    alert(data);
+                                }
+                            });
+                            dblChoseAlert.close();
+                        },
+                        "取消": function () {
+                            dblChoseAlert.close();
+                        }
+                    }
+                });
+            } else if (serverversion >= newversion) {
+                var dblChoseAlert = simpleAlert({
+                    "title": "更新AI机器人",
+                    "content": "服务器版本已是最新<" + serverversionname + ">！",
+                    "buttons": {
+                        "关闭": function () {
+                            dblChoseAlert.close();
+                        }
+                    }
+                });
+            }
+        }
+
+        function startServer(key, type) {
+            $.ajax({
+                type: "post",
+                url: "/ServiceMonitoringManagementController/startServer?key=" + key + "&type=" + type,
+                dataType: "text",
+                success: function (data) {
+                    alert(data);
+                }
+            });
+        }
+
+        function stopServer(key, type) {
+            var dblChoseAlert = simpleAlert({
+                "title": "警告",
+                "content": "按《停止》按钮，停止服务！",
+                "buttons": {
+                    "停止": function () {
+                        $.ajax({
+                            type: "post",
+                            url: "/ServiceMonitoringManagementController/stopServer?key=" + key + "&type=" + type,
+                            dataType: "text",
+                            success: function (data) {
+                                alert(data);
+                            }
+                        });
+                        dblChoseAlert.close();
+                    },
+                    "取消": function () {
+                        dblChoseAlert.close();
+                    }
+                }
+            })
+        }
+
+        function restartServer(key, type) {
+            var dblChoseAlert = simpleAlert({
+                "title": "警告",
+                "content": "按《重启》按钮，停止服务！",
+                "buttons": {
+                    "重启": function () {
+                        $.ajax({
+                            type: "post",
+                            url: "/ServiceMonitoringManagementController/restartServer?key=" + key + "&type=" + type,
+                            dataType: "text",
+                            success: function (data) {
+                                alert(data);
+                            }
+                        });
+                        dblChoseAlert.close();
+                    },
+                    "取消": function () {
+                        dblChoseAlert.close();
+                    }
+                }
+            })
+        }
+
+        function hideService(key, gid) {
+            $.ajax({
+                type: "post",
+                url: "/ServiceMonitoringManagementController/setHideServiceMonitoring?key=" + key,
+                dataType: "text",
+                success: function (data) {
+                    $("#" + gid).trigger("reloadGrid");
+                }
+            });
+
+        }
+
+        function readConfig(key, type) {
+            loadingStart();
+            $.ajax({
+                type: "post",
+                url: "/ServiceMonitoringManagementController/readConfig?key=" + key + "&type=" + type,
+                dataType: "text",
+                timeout: 30000,
+                async: true,
+                success: function (data) {
+                    alertstr("配置", data);
+                },
+                complete: function (XMLHttpRequest, status) {
+                    if (status == 'timeout') {
+                        alert("配置请求超时！");
+                    }
+                    loadingEnd('test');
+                }
+            });
+
+        }
+
+        function readData(key, type) {
+            loadingStart();
+            $.ajax({
+                type: "post",
+                url: "/ServiceMonitoringManagementController/readData?key=" + key + "&type=" + type,
+                dataType: "text",
+                timeout: 30000,
+                async: true,
+                success: function (data) {
+                    // alert(data);
+                    alertstr("详情信息", data);
+                },
+                complete: function (XMLHttpRequest, status) {
+                    if (status == 'timeout') {
+                        alert("详情信息请求超时！");
+                    }
+                    loadingEnd('test');
+                }
+            });
+
+        }
+
+        function readmoniterLog() {
+            loadingStart();
+            $.ajax({
+                type: "post",
+                url: "/ServiceMonitoringManagementController/getmoniterlog?" + new Date().getTime(),
+                dataType: "text",
+                timeout: 30000,
+                async: true,
+                success: function (data) {
+                    freshmoniterlog("日志", data);
+                },
+                complete: function (XMLHttpRequest, status) {
+                    if (status == 'timeout') {
+                        alert("日志请求超时！");
+                    }
+                    loadingEnd('test');
+                }
+            });
+        }
+
+        function getconfig(key) {
+            var serviceport = $("#serviceport").val();
+            $.ajax({
+                type: "post",
+                url: "/ServiceMonitoringManagementController/getConfig?id=" + id + "&key=" + key + "&port=" + serviceport,
+                dataType: "text",
+                success: function (data) {
+                    ue.setContent(data);
+                }
+            });
+        }
+
+        var ue = null;
+
+        function ueditorinit() {
+            ue = UE.getEditor('myEditor', {
+                //这里可以选择自己需要的工具按钮名称,此处仅选择如下五个
+                toolbars: [['FullScreen', 'Undo', 'Redo', 'test']],
+                //focus时自动清空初始化时的内容
+                autoClearinitialContent: true,
+                //关闭字数统计
+                wordCount: false,
+                //关闭elementPath
+                elementPathEnabled: false,
+                //默认的编辑区域高度
+                initialFrameHeight: 250,
+                initialFrameWidth: 450
+                //更多其他参数，请参考ueditor.config.js中的配置项
+            });
+        }
+
+        function checkpage1() {
+            var serviceip = $("#serviceip").val();
+            var serviceport = $("#serviceport").val();
+            var serviceid = $("#serviceid").val();
+            if (serviceip == undefined || serviceport == undefined || serviceid == undefined || serviceip == "" || serviceport == "" || serviceid == "") {
+                alert("信息填写不全！");
+                return false;
+            } else {
+                return true;
+            }
+        }
+
+        function serviceportinit() {
+            var text = document.getElementById("serviceport");
+            text.onkeyup = function () {
+                this.value = this.value.replace(/\D/g, '');
+                if (text.value > 65535) {
+                    text.value = 65535;
+                }
+            }
+        };
+
+        function serviceselectinit(key) {
+            $.ajax({
+                type: "post",
+                url: "/ServiceMonitoringManagementController/getServiceList?key=" + key,
+                dataType: "json",
+                success: function (data) {
+                    $("#serviceid").empty();
+                    var content = "";
+                    if (data.length > 0) {
+                        for (var i = 0; i < data.length; i++) {
+                            var jo = data[i];
+                            $("#serviceid").append("<option value='" + jo["name"] + "'>" + jo["name"] + "</option>");
+                        }
+                    }
+                }
+            });
+        };
+
+        function selectES() {
+            $.ajax({
+                type: "post",
+                url: "/ServiceMonitoringManagementController/queryServiceMonitoringList?type=2",
+                dataType: "json",
+                success: function (data) {
+                    $("#list").html("");
+                    var content = "";
+                    for (var i = 0; i < data.length; i++) {
+                        var jo = data[i];
+                        content = content + "<li>" + jo["hostip"].replace('[', '').replace(']', '') + "</li>";
+                    }
+                    $("#list").append(content);
+                }
+            });
+        }
+
+        function selectset() {
+            $.ajax({
+                type: "post",
+                url: "/ServiceMonitoringManagementController/queryServiceMonitoringList?type=9",
+                dataType: "json",
+                success: function (data) {
+                    $("#list").html("");
+                    var content = "";
+                    for (var i = 0; i < data.length; i++) {
+                        var jo = data[i];
+                        content = content + "<li>" + jo["hostip"].replace('[', '').replace(']', '') + "</li>";
+                    }
+                    $("#list").append(content);
+                }
+            });
+        }
+
+        function selectinit() {
+            $(".nice-select").click(function (e) {
+                $(this).find("ul").show();
+                e.stopPropagation();
+            });
+
+            $('#list').delegate('li', 'mouseover mouseout', function (e) {
+                $(this).toggleClass("on");
+                e.stopPropagation();
+            });
+
+            $('#list').delegate('li', 'click', function (e) {
+                var val = $(this).text();
+                var showContent = $('input[name="showContent"]:checked').val();
+                if (showContent == "portion") {
+                    if (val.indexOf('--') != -1)
+                        val = val.substring(0, val.indexOf('--'));
+                }
+                $(".nice-select").find("input").val(val);
+                $(".nice-select").find("ul").hide();
+                e.stopPropagation();
+            });
+
+            $(document).click(function () {
+                $(".nice-select").find("ul").hide();
+            });
+
+            selectset();
+        }
+
+        function searchList(strValue) {
+            var count = 0;
+            if (strValue != "") {
+                $(".nice-select ul li").each(function (i) {
+                    var contentValue = $(this).text();
+                    if (contentValue.toLowerCase().indexOf(strValue.toLowerCase()) < 0) {
+                        $(this).hide();
+                        count++;
+                    } else {
+                        $(this).show();
+                    }
+                    if (count == (i + 1)) {
+                        $(".nice-select").find("ul").hide();
+                    } else {
+                        $(".nice-select").find("ul").show();
+                    }
+                });
+            } else {
+                $(".nice-select ul li").each(function (i) {
+                    $(this).show();
+                });
+            }
+        }
+
+        function stepinit() {
+            $("#process2").addClass('main-hide');
+            $("#process3").addClass('main-hide');
+            $('#previous_step').hide();
+            /*上一步*/
+            $('#previous_step').bind('click', function () {
+                index--;
+                ControlContent(index);
+            });
+            /*下一步*/
+            $('#next_step').bind('click', function () {
+                if (index == 0) {
+                    if (!checkpage1()) {
+                        return false;
+                    }
+                    getconfig($("#serviceid").val());
+                }
+                index++;
+                ControlContent(index);
+            });
+        }
+
+        function ControlContent(index) {
+            var stepContents = ["process1", "process2", "process3"];
+            var key;//数组中元素的索引值
+            for (key in stepContents) {
+                var stepContent = stepContents[key];//获得元素的值
+                if (key == index) {
+                    if (stepContent == 'process1') {
+                        $('#previous_step').hide();
+                    } else {
+                        $('#previous_step').show();
+                    }
+                    if (stepContent == 'process3') {
+                        $('#next_step').hide();
+                    } else {
+                        $('#next_step').show();
+                    }
+                    $('#' + stepContent).removeClass('main-hide');
+                    $('#point' + key).addClass('c-select');
+                    $('#line' + key).removeClass('b-select');
+                } else {
+                    $('#' + stepContent).addClass('main-hide');
+                    if (key > index) {
+                        $('#point' + key).removeClass('c-select');
+                        $('#line' + key).removeClass('b-select');
+                    } else if (key < index) {
+                        $('#point' + key).addClass('c-select');
+                        $('#line' + key).addClass('b-select');
+                    }
+                }
+            }
+        }
+
+
+        function webonmousemove() {
+            time1 = new Date().getTime();
+        }
+
+        function ReloadGrid() {
+            var time2 = new Date().getTime();
+            if ((time2 - time1) > 30000) {
+                $("#gridTable").trigger("reloadGrid");
+                $("#gridTable2").trigger("reloadGrid");
+                time1 = new Date().getTime();
+                selectset();
+
+            }
+        }
+
+        //加载表格
+        function GetGrid() {
+            setInterval(ReloadGrid, 5000);
+            var iptag = $("#iptag").val();
+            var selectedRowIndex = 0;
+            var $gridTable = $('#gridTable');
+            $gridTable.jqGrid({
+                // autowidth: true,
+                height: $(window).height() - 136.5,
+                url: "/ServiceMonitoringManagementController/queryServiceMonitoringnew",
+                datatype: "json",
+                postData: {
+                    'page': $('#gridTable').jqGrid('getGridParam', 'page'),
+                    'rows': $('#gridTable').getGridParam('rowNum'),
+                    'iptag': $('#iptag').val()
+                },
+                colModel: [
+                    {label: '主键', name: 'modeltypeid', index: 'modeltypeid', hidden: true},
+                    {
+                        label: '状态',
+                        formatter: formatStatus,
+                        name: 'modelstatus',
+                        index: 'modelstatus',
+                        width: 110,
+                        align: 'center'
+                    },
+                    {
+                        label: '类型',
+                        formatter: formatStatus,
+                        name: 'modeltype',
+                        index: 'modeltype',
+                        width: 250,
+                        align: 'center'
+                    },
+                    {label: '时间', name: 'alarmtime', index: 'alarmtime', width: 450, align: 'center'},
+                    {
+                        label: '操作',
+                        formatter: formatbutton,
+                        name: 'modeltype',
+                        index: 'modeltype',
+                        width: 220,
+                        align: 'center'
+                    }
+                ],
+                rowNum: 50,
+                sortname: 'num',
+                sortorder: "asc",
+                subGrid: true,
+                height: '100%',
+                pager: "#gridPager",
+                subGridRowExpanded: function (subgrid_id, row_id) {
+                    var rowData = $('#gridTable').getRowData(row_id);
+                    var subgrid_table_id, pager_id;
+                    subgrid_table_id = subgrid_id + "_t";
+                    pager_id = "p_" + subgrid_table_id;
+                    $("#" + subgrid_id).html(
+                        "<table id='" + subgrid_table_id
+                        + "' class='scroll'></table><div id='"
+                        + pager_id + "' class='scroll'></div>");
+                    jQuery("#" + subgrid_table_id).jqGrid(
+                        {
+                            url: "/ServiceMonitoringManagementController/queryServiceMonitoringList?type=" + rowData['modeltypeid'] + "&iptag=" + $('#iptag').val(),
+                            datatype: "json",
+                            colModel: [
+                                {label: '超时标记', name: 'olddate', index: 'olddate', hidden: true},
+                                {label: '数据id', name: 'task_id', index: 'task_id', hidden: true},
+                                {label: '主键', name: 'key', index: 'key', hidden: true},
+                                {
+                                    label: '标签',
+                                    name: 'iptag',
+                                    index: 'iptag',
+                                    width: 30,
+                                    align: 'center',
+                                    editable: true
+                                },
+                                {
+                                    label: '状态',
+                                    formatter: formatStatus,
+                                    name: 'modelstatus',
+                                    index: 'modelstatus',
+                                    width: 30,
+                                    align: 'center'
+                                },
+                                {
+                                    label: '数据',
+                                    name: 'last_status',
+                                    index: 'last_status',
+                                    width: 30,
+                                    align: 'center'
+                                },
+                                {
+                                    label: '类型',
+                                    formatter: formatStatus,
+                                    name: 'modeltype',
+                                    index: 'modeltype',
+                                    width: 50,
+                                    align: 'center'
+                                },
+                                {label: 'PID', name: 'pid', index: 'pid', width: 50, align: 'left'},
+                                {label: '地址', name: 'hostip', index: 'hostip', width: 95, align: 'center'},
+                                {label: '服务名', name: 'modelname', index: 'modelname', width: 160, align: 'left'},
+                                {label: '路径', name: 'processpath', index: 'processpath', width: 160, align: 'left'},
+                                {
+                                    label: '说明',
+                                    formatter: hidcode,
+                                    name: 'alarmcontent',
+                                    index: 'alarmcontent',
+                                    width: 170,
+                                    align: 'left'
+                                },
+                                {label: '时间', name: 'alarmtime', index: 'alarmtime', width: 120, align: 'center'},
+                                {
+                                    label: '操作',
+                                    formatter: formatbutton,
+                                    name: 'operate',
+                                    index: 'key',
+                                    width: 80,
+                                    align: 'center'
+                                }
+                            ],
+                            rowNum: 200,
+                            pager: pager_id,
+                            sortable: true,
+                            sortname: 'modelname',
+                            sortorder: "asc",
+                            subGrid: true,
+                            height: '100%',
+                            forceFit: true,
+                            cellEdit: true,
+                            cellsubmit: 'remote',
+                            cellurl: '/ServiceMonitoringManagementController/editiptag',
+                            subGridRowExpanded: function (subgrid_id_s, row_id_s) {
+                                var rowData_s = $("#" + subgrid_table_id).getRowData(row_id_s);
+                                var subgrid_table_id_s, pager_id_s;
+                                subgrid_table_id_s = subgrid_id_s + "_t";
+                                pager_id_s = "p_" + subgrid_table_id_s;
+                                $("#" + subgrid_id_s).html(
+                                    "<table id='" + subgrid_table_id_s
+                                    + "' class='scroll'></table><div id='"
+                                    + pager_id_s + "' class='scroll'></div>");
+                                jQuery("#" + subgrid_table_id_s).jqGrid(
+                                    {
+                                        url: "/ServiceMonitoringManagementController/queryServiceMonitoringHistory?key=" + rowData_s['key'] + "&iptag=" + $('#iptag').val(),
+                                        datatype: "json",
+                                        colModel: [
+                                            {label: '主键', name: 'key', index: 'key', hidden: true},
+                                            {
+                                                label: '状态',
+                                                formatter: formatStatus,
+                                                name: 'modelstatus',
+                                                index: 'modelstatus',
+                                                width: 30,
+                                                align: 'center'
+                                            },
+                                            {
+                                                label: '类型',
+                                                formatter: formatStatus,
+                                                name: 'modeltype',
+                                                index: 'modeltype',
+                                                width: 50,
+                                                align: 'center'
+                                            },
+                                            {label: 'PID', name: 'pid', index: 'pid', width: 50, align: 'left'},
+                                            {label: '地址', name: 'hostip', index: 'hostip', width: 95, align: 'center'},
+                                            {
+                                                label: '服务名',
+                                                name: 'modelname',
+                                                index: 'modelname',
+                                                width: 200,
+                                                align: 'left'
+                                            },
+                                            {
+                                                label: '路径',
+                                                name: 'processpath',
+                                                index: 'processpath',
+                                                width: 160,
+                                                align: 'left'
+                                            },
+                                            {
+                                                label: '说明',
+                                                formatter: hidcode,
+                                                name: 'alarmcontent',
+                                                index: 'alarmcontent',
+                                                width: 200,
+                                                align: 'left'
+                                            },
+                                            {
+                                                label: '时间',
+                                                name: 'alarmtime',
+                                                index: 'alarmtime',
+                                                width: 200,
+                                                align: 'center'
+                                            }
+                                        ],
+                                        rowNum: 50,
+                                        pager: pager_id_s,
+                                        sortname: 'num',
+                                        sortorder: "asc",
+                                        height: '100%'
+                                    });
+                                jQuery("#" + subgrid_table_id_s).jqGrid('navGrid',
+                                    "#" + pager_id_s, {
+                                        edit: false,
+                                        add: false,
+                                        del: false,
+                                        search: false,
+                                        refresh: true,
+                                        view: false
+                                    });
+                            },
+                            loadComplete: function () {
+                                var ids = $('#' + this.id).getDataIDs();
+                                for (var i = 0; i < ids.length; i++) {
+                                    var rowData = $('#' + this.id).getRowData(ids[i]);
+                                    if (rowData.olddate == 1) {
+                                        $('#' + this.id).find('td').addClass('differentFlag');
+                                    }
+                                }
+                            },
+                            beforeSubmitCell: function (rowid, celname, value, iRow, iCol) {
+                                var rowData = $('#' + this.id).getRowData(rowid);
+                                return {'hostip': rowData.hostip}
+                            },
+                            afterSubmitCell: function () {
+                                $('#' + this.id).trigger("reloadGrid");
+                                refreshiptagselect();
+                                return [true, ''];
+                            }
+                        });
+
+                    jQuery("#" + subgrid_table_id).jqGrid("navGrid", "#" + pager_id, {
+                        edit: false,
+                        add: false,
+                        del: false,
+                        search: false,
+                        refresh: false,
+                        view: false
+                    }).jqGrid('navButtonAdd', "#" + pager_id, {
+                        caption: "刷新",
+                        buttonicon: "ui-icon-refresh",
+                        position: "last",
+                        title: "Reload Grid",
+                        cursor: "pointer",
+                        onClickButton: function () {
+                            jQuery("#" + subgrid_table_id).jqGrid("setGridParam", {
+                                postData: {
+                                    'page': $("#" + subgrid_table_id).jqGrid('getGridParam', 'page'),
+                                    'rows': $("#" + subgrid_table_id).getGridParam('rowNum'),
+                                    'iptag': $('#iptag').val()
+                                }
+                            }).trigger("reloadGrid");
+                        }
+                    });
+                },
+                onSelectRow: function (id) {
+                    selectedRowIndex = $('#' + this.id).getGridParam('selrow');
+                },
+                gridComplete: function () {
+                    $('#' + this.id).setSelection(selectedRowIndex, false);
+                }
+            });
+
+            jQuery("#gridTable").jqGrid("navGrid", "#gridPager", {
+                edit: false,
+                add: false,
+                del: false,
+                search: false,
+                refresh: false,
+                view: false
+            }).jqGrid('navButtonAdd', "#gridPager", {
+                caption: "刷新",
+                buttonicon: "ui-icon-refresh",
+                position: "last",
+                title: "Reload Grid",
+                cursor: "pointer",
+                onClickButton: function () {
+                    jQuery("#gridTable").jqGrid("setGridParam", {
+                        postData: {
+                            'page': $('#gridTable').jqGrid('getGridParam', 'page'),
+                            'rows': $('#gridTable').getGridParam('rowNum'),
+                            'iptag': $('#iptag').val()
+                        }
+                    }).trigger("reloadGrid");
+                }
+            });
+
+
+        }
+
+
+        function alertstrnew(title, id) {
+            var dblChoseAlert2 = simpleAlert2({
+                "title": title,
+                "content": alertmap.get(id),
+                "buttons": {
+                    "关闭": function () {
+                        dblChoseAlert2.close();
+                    }
+                }
+            });
+        }
+
+        var alertmap = new Map();
+
+        function hidcode(cellvalue, options, rowObject) {
+            if (cellvalue == undefined) {
+                return "";
+            }
+            var disLen = 60;
+            var len = cellvalue.length;
+            if (len > disLen) {
+                var i = options.gid + "_" + options.rowId;
+                alertmap.set(i, cellvalue);
+                cellvalue = "<div>" + cellvalue.substring(0, disLen) + "</div>"
+                    + "<a onclick=\"alertstrnew('详情', '" + i + "');\" ><span style='color:blue'>[查看更多]</span></a>&nbsp;";
+            }
+            return cellvalue;
+        }
+
+        function GetGrid2() {
+            setInterval(ReloadGrid, 5000);
+            var iptag = $("#iptag").find("option:selected").text();
+            var selectedRowIndex = 0;
+            var $gridTable = $('#gridTable2');
+            $gridTable.jqGrid({
+                // autowidth: true,
+                height: $(window).height() - 136.5,
+                url: "/ServiceMonitoringManagementController/queryipServiceMonitoringnew",
+                datatype: "json",
+                postData: {
+                    'page': $('#gridTable2').jqGrid('getGridParam', 'page'),
+                    'rows': $('#gridTable2').getGridParam('rowNum'),
+                    'iptag': iptag
+                },
+                colModel: [
+                    {label: '地址', name: 'hostip', index: 'hostip', align: 'center'},
+                    {
+                        label: '标签',
+                        name: 'iptag',
+                        index: 'iptag',
+                        width: 30,
+                        align: 'center',
+                        editable: true
+                    },
+                    {
+                        label: '状态',
+                        formatter: formatStatusip,
+                        name: 'modelstatus',
+                        index: 'modelstatus',
+                        width: 110,
+                        align: 'center'
+                    },
+                    {
+                        label: '类型',
+                        formatter: formatStatusip,
+                        name: 'modeltype',
+                        index: 'modeltype',
+                        width: 325,
+                        align: 'center'
+                    },
+                    {label: '时间', name: 'alarmtime', index: 'alarmtime', width: 320, align: 'center'},
+                    {
+                        label: '操作',
+                        formatter: formatbutton2,
+                        name: 'operate',
+                        index: 'key',
+                        width: 100,
+                        align: 'center'
+                    }
+                ],
+                rowNum: 200,
+                sortname: 'num',
+                sortorder: "asc",
+                subGrid: true,
+                height: '100%',
+                pager: "#gridPager2",
+                cellEdit: true,
+                cellsubmit: 'remote',
+                cellurl: '/ServiceMonitoringManagementController/editiptag',
+                subGridRowExpanded: function (subgrid_id, row_id) {
+                    var rowData = $('#gridTable2').getRowData(row_id);
+                    var subgrid_table_id, pager_id;
+                    subgrid_table_id = subgrid_id + "_t";
+                    pager_id = "ip_p_" + subgrid_table_id;
+                    $("#" + subgrid_id).html(
+                        "<table id='" + subgrid_table_id
+                        + "' class='scroll'></table><div id='"
+                        + pager_id + "' class='scroll'></div>");
+                    jQuery("#" + subgrid_table_id).jqGrid(
+                        {
+                            url: "/ServiceMonitoringManagementController/queryipServiceMonitoringList?hostip=" + rowData['hostip'] + "&iptag=" + iptag,
+                            datatype: "json",
+                            colModel: [
+                                {label: '超时标记', name: 'olddate', index: 'olddate', hidden: true},
+                                {label: '数据id', name: 'task_id', index: 'task_id', hidden: true},
+                                {label: '主键', name: 'key', index: 'key', hidden: true},
+                                {
+                                    label: '状态',
+                                    formatter: formatStatus,
+                                    name: 'modelstatus',
+                                    index: 'modelstatus',
+                                    width: 30,
+                                    align: 'center'
+                                },
+                                {
+                                    label: '数据',
+                                    name: 'last_status',
+                                    index: 'last_status',
+                                    width: 30,
+                                    align: 'center'
+                                },
+                                {
+                                    label: '类型',
+                                    formatter: formatStatus,
+                                    name: 'modeltype',
+                                    index: 'modeltype',
+                                    width: 110,
+                                    align: 'center'
+                                },
+                                {label: 'PID', name: 'pid', index: 'pid', width: 50, align: 'left'},
+                                {label: '服务名', name: 'modelname', index: 'modelname', width: 178, align: 'left'},
+                                {label: '路径', name: 'processpath', index: 'processpath', width: 160, align: 'left'},
+                                {
+                                    label: '说明',
+                                    formatter: hidcode,
+                                    name: 'alarmcontent',
+                                    index: 'alarmcontent',
+                                    width: 200,
+                                    align: 'left'
+                                },
+                                {label: '时间', name: 'alarmtime', index: 'alarmtime', width: 120, align: 'center'},
+                                {
+                                    label: '操作',
+                                    formatter: formatbutton,
+                                    name: 'operate',
+                                    index: 'key',
+                                    width: 110,
+                                    align: 'center'
+                                }
+                            ],
+                            rowNum: 200,
+                            pager: pager_id,
+                            sortname: 'num',
+                            sortorder: "asc",
+                            subGrid: true,
+                            height: '100%',
+                            subGridRowExpanded: function (subgrid_id_s, row_id_s) {
+                                var rowData_s = $("#" + subgrid_table_id).getRowData(row_id_s);
+                                var subgrid_table_id_s, pager_id_s;
+                                subgrid_table_id_s = subgrid_id_s + "_t";
+                                pager_id_s = "ip_p_" + subgrid_table_id_s;
+                                $("#" + subgrid_id_s).html(
+                                    "<table id='" + subgrid_table_id_s
+                                    + "' class='scroll'></table><div id='"
+                                    + pager_id_s + "' class='scroll'></div>");
+                                jQuery("#" + subgrid_table_id_s).jqGrid(
+                                    {
+                                        url: "/ServiceMonitoringManagementController/queryServiceMonitoringHistory?key=" + rowData_s['key'] + "&iptag=" + iptag,
+                                        datatype: "json",
+                                        colModel: [
+                                            {label: '主键', name: 'key', index: 'key', hidden: true},
+                                            {
+                                                label: '状态',
+                                                formatter: formatStatus,
+                                                name: 'modelstatus',
+                                                index: 'modelstatus',
+                                                width: 30,
+                                                align: 'center'
+                                            },
+                                            {
+                                                label: '类型',
+                                                formatter: formatStatus,
+                                                name: 'modeltype',
+                                                index: 'modeltype',
+                                                width: 50,
+                                                align: 'center'
+                                            },
+                                            {label: 'PID', name: 'pid', index: 'pid', width: 50, align: 'left'},
+                                            {label: '地址', name: 'hostip', index: 'hostip', width: 95, align: 'center'},
+                                            {
+                                                label: '服务名',
+                                                name: 'modelname',
+                                                index: 'modelname',
+                                                width: 200,
+                                                align: 'left'
+                                            },
+                                            {
+                                                label: '路径',
+                                                name: 'processpath',
+                                                index: 'processpath',
+                                                width: 160,
+                                                align: 'left'
+                                            },
+                                            {
+                                                label: '说明',
+                                                formatter: hidcode,
+                                                name: 'alarmcontent',
+                                                index: 'alarmcontent',
+                                                width: 200,
+                                                align: 'left'
+                                            },
+                                            {
+                                                label: '时间',
+                                                name: 'alarmtime',
+                                                index: 'alarmtime',
+                                                width: 200,
+                                                align: 'center'
+                                            }
+                                        ],
+                                        rowNum: 50,
+                                        pager: pager_id_s,
+                                        sortname: 'num',
+                                        sortorder: "asc",
+                                        height: '100%'
+                                    });
+                                jQuery("#" + subgrid_table_id_s).jqGrid('navGrid',
+                                    "#" + pager_id_s, {
+                                        edit: false,
+                                        add: false,
+                                        del: false,
+                                        search: false,
+                                        refresh: true,
+                                        view: false
+                                    });
+                            },
+                            loadComplete: function () {
+                                var ids = $('#' + this.id).getDataIDs();
+                                for (var i = 0; i < ids.length; i++) {
+                                    var rowData = $('#' + this.id).getRowData(ids[i]);
+                                    if (rowData.olddate == 1) {
+                                        $('#' + this.id).find('td').addClass('differentFlag');
+                                    }
+                                }
+                            }
+                        });
+                    jQuery("#" + subgrid_table_id).jqGrid('navGrid',
+                        "#" + pager_id, {
+                            edit: false,
+                            add: false,
+                            del: false,
+                            search: false,
+                            refresh: true,
+                            view: false
+                        });
+                },
+                onSelectRow: function () {
+                    selectedRowIndex = $('#' + this.id).getGridParam('selrow');
+                },
+                gridComplete: function () {
+                    $('#' + this.id).setSelection(selectedRowIndex, false);
+                },
+                beforeSubmitCell: function (rowid, celname, value, iRow, iCol) {
+                    var rowData = $('#' + this.id).getRowData(rowid);
+                    return {'hostip': "[" + rowData.hostip + "]"}
+                },
+                afterSubmitCell: function () {
+                    $('#' + this.id).trigger("reloadGrid");
+                    refreshiptagselect();
+                    return [true, ''];
+                }
+            });
+
+            jQuery("#gridTable2").jqGrid("navGrid", "#gridPager2", {
+                edit: false,
+                add: false,
+                del: false,
+                search: false,
+                refresh: false,
+                view: false
+            }).jqGrid('navButtonAdd', "#gridPager2", {
+                caption: "刷新",
+                buttonicon: "ui-icon-refresh",
+                position: "last",
+                title: "Reload Grid",
+                cursor: "pointer",
+                onClickButton: function () {
+                    jQuery("#gridTable2").jqGrid("setGridParam", {
+                        postData: {
+                            'page': $('#gridTable2').jqGrid('getGridParam', 'page'),
+                            'rows': $('#gridTable2').getGridParam('rowNum'),
+                            'iptag': $('#iptag').val()
+                        }
+                    }).trigger("reloadGrid");
+                }
+            });
+        }
+
+        function formatStatus(cellvalue, options, rowObject) {
+            switch (options.colModel.name) {
+                case "modelstatus":
+                    switch (cellvalue) {
+                        case 1:
+                            return '<div style="margin: auto;border-radius: 100%;width: 15px; height: 15px; background-color: rgb(0, 255, 0); border-color: rgb(0, 255, 0); border-width: 1px; border-style: solid; font-size: 14px; padding: 0px; text-align: center; line-height: 20px; font-weight: normal; font-style: normal;"><div class="text"><p>&nbsp;</p></div></div>';
+                            break;
+                        case 2:
+                            return '<div style="margin: auto;border-radius: 100%;width: 15px; height: 15px; background-color: rgb(255, 255, 0); border-color: rgb(255, 255, 0); border-width: 1px; border-style: solid; font-size: 14px; padding: 0px; text-align: center; line-height: 20px; font-weight: normal; font-style: normal;"><div class="text"><p>&nbsp;</p></div></div>';
+                            break;
+                        case 3:
+                            return '<div style="margin: auto;border-radius: 100%;width: 15px; height: 15px; background-color: rgb(255, 0, 0); border-color: rgb(255, 0, 0); border-width: 1px; border-style: solid; font-size: 14px; padding: 0px; text-align: center; line-height: 20px; font-weight: normal; font-style: normal;"><div class="text"><p>&nbsp;</p></div></div>';
+                            break;
+                        case 4:
+                            return '<div style="margin: auto;border-radius: 100%;width: 15px; height: 15px; background-color: rgb(152, 0, 0); border-color: rgb(152, 0, 0); border-width: 1px; border-style: solid; font-size: 14px; padding: 0px; text-align: center; line-height: 20px; font-weight: normal; font-style: normal;"><div class="text"><p>&nbsp;</p></div></div>';
+                            break;
+                        case 5:
+                            return '<div style="margin: auto;border-radius: 100%;width: 15px; height: 15px; background-color: rgb(204, 204, 204); border-color: rgb(204, 204, 204); border-width: 1px; border-style: solid; font-size: 14px; padding: 0px; text-align: center; line-height: 20px; font-weight: normal; font-style: normal;"><div class="text"><p>&nbsp;</p></div></div>';
+                            break;
+                        default:
+                    }
+                    break;
+                case "modeltype":
+                    switch (cellvalue) {
+                        case 1:
+                            return "ES";
+                            break;
+                        case 2:
+                            return "KAFKA";
+                            break;
+                        case 3:
+                            return "CDH集群";
+                            break;
+                        case 4:
+                            return "ES导入服务";
+                            break;
+                        case 5:
+                            return "ES查询服务";
+                            break;
+                        case 6:
+                            return "CDH导入服务";
+                            break;
+                        case 7:
+                            return "CDH查询服务";
+                            break;
+                        case 8:
+                            return "服务总线";
+                            break;
+                        case 9:
+                            return "操作系统";
+                            break;
+                        case 10:
+                            return "采集程序";
+                            break;
+                        case 11:
+                            return "关系型数据库导入";
+                            break;
+                        case 12:
+                            return "关系型数据库查询";
+                            break;
+                        case 13:
+                            return "KAFKA管理服务";
+                            break;
+                        case 14:
+                            return "数据量监控";
+                            break;
+                        case 15:
+                            return "应用日志采集服务";
+                            break;
+                        case 16:
+                            return "应用日志汇聚服务";
+                            break;
+                        case 17:
+                            return "人员档案服务";
+                            break;
+                        case 18:
+                            return "人员档案汇聚";
+                            break;
+                        case 19:
+                            return "MPP导入服务";
+                            break;
+                        case 21:
+                            return "实时分析引擎";
+                            break;
+                        case 22:
+                            return "数据工坊引擎";
+                            break;
+                        case 23:
+                            return "URL检测";
+                            break;
+                        default:
+                    }
+                    break;
+                default:
+            }
+        }
+
+        function formatStatusip(cellvalue, options, rowObject) {
+            switch (options.colModel.name) {
+                case "modelstatus":
+                    switch (cellvalue) {
+                        case 1:
+                            return '<div style="margin: auto;border-radius: 100%;width: 15px; height: 15px; background-color: rgb(0, 255, 0); border-color: rgb(0, 255, 0); border-width: 1px; border-style: solid; font-size: 14px; padding: 0px; text-align: center; line-height: 20px; font-weight: normal; font-style: normal;"><div class="text"><p>&nbsp;</p></div></div>';
+                            // return "正常";
+                            break;
+                        case 2:
+                            return '<div style="margin: auto;border-radius: 100%;width: 15px; height: 15px; background-color: rgb(255, 255, 0); border-color: rgb(255, 255, 0); border-width: 1px; border-style: solid; font-size: 14px; padding: 0px; text-align: center; line-height: 20px; font-weight: normal; font-style: normal;"><div class="text"><p>&nbsp;</p></div></div>';
+                            break;
+                        case 3:
+                            return '<div style="margin: auto;border-radius: 100%;width: 15px; height: 15px; background-color: rgb(255, 0, 0); border-color: rgb(255, 0, 0); border-width: 1px; border-style: solid; font-size: 14px; padding: 0px; text-align: center; line-height: 20px; font-weight: normal; font-style: normal;"><div class="text"><p>&nbsp;</p></div></div>';
+                            break;
+                        case 4:
+                            return '<div style="margin: auto;border-radius: 100%;width: 15px; height: 15px; background-color: rgb(152, 0, 0); border-color: rgb(152, 0, 0); border-width: 1px; border-style: solid; font-size: 14px; padding: 0px; text-align: center; line-height: 20px; font-weight: normal; font-style: normal;"><div class="text"><p>&nbsp;</p></div></div>';
+                            break;
+                        case 5:
+                            return '<div style="margin: auto;border-radius: 100%;width: 15px; height: 15px; background-color: rgb(204, 204, 204); border-color: rgb(204, 204, 204); border-width: 1px; border-style: solid; font-size: 14px; padding: 0px; text-align: center; line-height: 20px; font-weight: normal; font-style: normal;"><div class="text"><p>&nbsp;</p></div></div>';
+                            break;
+                        default:
+                    }
+                    break;
+                case "modeltype":
+                    var modeltype = "";
+                    var tmp = cellvalue.split(",");
+                    for (i = 0; i < tmp.length; i++) {
+                        if (i > 0) {
+                            modeltype += ","
+                        }
+                        switch (tmp[i]) {
+                            case "1":
+                                modeltype += "ES";
+                                break;
+                            case "2":
+                                modeltype += "KAFKA";
+                                break;
+                            case "3":
+                                modeltype += "CDH集群";
+                                break;
+                            case "4":
+                                modeltype += "ES导入服务";
+                                break;
+                            case "5":
+                                modeltype += "ES查询服务";
+                                break;
+                            case "6":
+                                modeltype += "CDH导入服务";
+                                break;
+                            case "7":
+                                modeltype += "CDH查询服务";
+                                break;
+                            case "8":
+                                modeltype += "服务总线";
+                                break;
+                            case "9":
+                                modeltype += "操作系统";
+                                break;
+                            case "10":
+                                modeltype += "采集程序";
+                                break;
+                            case "11":
+                                modeltype += "关系型数据库导入";
+                                break;
+                            case "12":
+                                modeltype += "关系型数据库查询";
+                                break;
+                            case "13":
+                                modeltype += "KAFKA管理服务";
+                                break;
+                            case "14":
+                                modeltype += "数据量监控";
+                                break;
+                            case "15":
+                                modeltype += "应用日志采集服务";
+                                break;
+                            case "16":
+                                modeltype += "应用日志汇聚服务";
+                                break;
+                            case "17":
+                                modeltype += "人员档案服务";
+                                break;
+                            case "18":
+                                modeltype += "人员档案汇聚";
+                                break;
+                            case "19":
+                                modeltype += "MPP导入服务";
+                                break;
+                            case '21':
+                                modeltype += "实时分析引擎";
+                                break;
+                            case '22':
+                                modeltype += "数据工坊引擎";
+                                break;
+                            default:
+                        }
+                    }
+                    return modeltype;
+                    break;
+                default:
+            }
+        }
+
+        function formatbutton(cellvalue, options, rowObject) {
+            var type = rowObject.modeltype;
+            // var typename = getmodelname(type);
+            var pid = rowObject.pid;
+            var hostips = new Array();
+            if (rowObject.hostip != undefined) {
+                hostips = rowObject.hostip.replace('[', '').replace(']', '').split(",");
+            }
+            if (islogin) {
+                switch (options.colModel.name) {
+                    case "modeltype":
+                        // if (1 != type && 2 != type && 3 != type && 9 != type) {
+                        //     return "<input style='height:14px;width:30px;' type='button' value='添加' onclick=\"addServer('" + cellvalue + "');\" />&nbsp;";
+                        // } else {
+                        //     return "";
+                        // }
+                        return "";
+                        break;
+                    case "operate":
+                        var str = "";
+                        var type = rowObject.modeltype;
+                        var modelname = rowObject.modelname;
+                        var status = rowObject.modelstatus;
+                        var olddate = rowObject.olddate;
+                        var pid = rowObject.pid;
+                        str += "<input style='height:14px;width:30px;' type='button' value='管理' onclick=\"parenttab(" + type + ",'" + hostips + "','" + rowObject.key + "','" + pid + "','" + rowObject.task_id + "');\" />&nbsp;";
+                        if (1 == olddate) {
+                            str += "<input style='height:14px;width:30px;' type='button' value='忽略' onclick=\"hideService('" + rowObject.key + "','" + options.gid + "');\" />&nbsp;";
+                        }
+                        if (4 == type) {
+                            str += "<input style='height:14px;width:40px;' type='button' value='更新' onclick=\"updateserver('" + pid + "','" + hostips + "','4');\" />&nbsp;";
+                        }
+                        if (5 == type) {
+                            str += "<input style='height:14px;width:40px;' type='button' value='更新' onclick=\"updateserver('" + pid + "','" + hostips + "','5');\" />&nbsp;";
+                        }
+                        if (6 == type) {
+                            str += "<input style='height:14px;width:40px;' type='button' value='更新' onclick=\"updateserver('" + pid + "','" + hostips + "','6');\" />&nbsp;";
+                        }
+                        if (7 == type) {
+                            str += "<input style='height:14px;width:40px;' type='button' value='更新' onclick=\"updateserver('" + pid + "','" + hostips + "','7');\" />&nbsp;";
+                        }
+                        if (8 == type) {
+                            str += "<input style='height:14px;width:40px;' type='button' value='更新' onclick=\"updateserver('" + pid + "','" + hostips + "','8');\" />&nbsp;";
+                        }
+                        if (9 == type) {
+                            str += "<input style='height:14px;width:40px;' type='button' value='更新' onclick=\"updateairobotgo('" + hostips + "');\" />&nbsp;";
+                        }
+                        if (10 == type && modelname == "数据采集模块") {
+                            str += "<input style='height:14px;width:40px;' type='button' value='更新' onclick=\"updateserver('" + pid + "','" + hostips + "','10');\" />&nbsp;";
+                        }
+                        if (11 == type) {
+                            str += "<input style='height:14px;width:40px;' type='button' value='更新' onclick=\"updateserver('" + pid + "','" + hostips + "','11');\" />&nbsp;";
+                        }
+                        if (12 == type) {
+                            str += "<input style='height:14px;width:40px;' type='button' value='更新' onclick=\"updateserver('" + pid + "','" + hostips + "','12');\" />&nbsp;";
+                        }
+                        if (13 == type) {
+                            str += "<input style='height:14px;width:40px;' type='button' value='更新' onclick=\"updateserver('" + pid + "','" + hostips + "','13');\" />&nbsp;";
+                        }
+                        if (1 != type && 2 != type && 3 != type && 9 != type) {
+                            if (status == 4) {
+                                str += "<input style='height:14px;width:30px;' type='button' value='启动' onclick=\"startServer('" + rowObject.key + "','" + rowObject.modeltype + "');\" />&nbsp;";
+                            }
+                            if (status != 4) {
+                                str += "<input style='height:14px;width:30px;' type='button' value='停止' onclick=\"stopServer('" + rowObject.key + "','" + rowObject.modeltype + "');\" />&nbsp;";
+                                str += "<input style='height:14px;width:30px;' type='button' value='重启' onclick=\"restartServer('" + rowObject.key + "','" + rowObject.modeltype + "');\" />&nbsp;";
+                            }
+                        }
+                        return str;
+                        break;
+                    default:
+                }
+            } else {
+                switch (options.colModel.name) {
+                    case "operate":
+                        var str = "";
+                        var olddate = rowObject.olddate;
+                        if (1 == olddate) {
+                            str += "<input style='height:14px;width:30px;' type='button' value='忽略' onclick=\"hideService('" + rowObject.key + "','" + options.gid + "');\" />&nbsp;";
+                        }
+                        // if (14 != type && 9 != type && undefined != pid) {
+                        //     str += "<input style='height:14px;width:30px;' type='button' value='日志' onclick=\"readLog('" + rowObject.key + "','" + rowObject.modeltype + "');\" />&nbsp;";
+                        // }
+                        // if (1 == type && undefined == pid) {
+                        //     for (i = 0; i < hostips.length; i++) {
+                        //         str += "<input style='height:14px;width:30px;' type='button' value='head' onclick=\"abt('http://" + hostips[i] + ":9200/_plugin/head/','_blank');\" />&nbsp;";
+                        //         str += "<input style='height:14px;width:30px;' type='button' value='sql' onclick=\"abt('http://" + hostips[i] + ":9200/_plugin/sql/','_blank');\" />&nbsp;";
+                        //         str += "<input style='height:14px;width:30px;' type='button' value='内存' onclick=\"abt('http://" + hostips[i] + ":9200/_cat/nodes?v','_blank');\" />&nbsp;";
+                        //         str += "<input style='height:14px;width:30px;' type='button' value='硬盘' onclick=\"abt('http://" + hostips[i] + ":9200/_cat/allocation?v','_blank');\" />&nbsp;";
+                        //         str += "<input style='height:14px;width:30px;' type='button' value='索引' onclick=\"abt('http://" + hostips[i] + ":9200/_cat/indices?v','_blank');\" />&nbsp;";
+                        //     }
+                        // }
+                        // if (9 == type) {
+                        //     str += "<input style='height:14px;width:45px;' type='button' value='详情' onclick=\"readData('" + rowObject.key + "','" + rowObject.modeltype  + "');\" />&nbsp;";
+                        // }
+                        // str += "<input style='height:14px;width:30px;' type='button' value='管理' onclick=\"parenttab(" + type + ",'" + hostips + "','" + rowObject.key + "','" + pid + "','" + rowObject.task_id + "');\" />&nbsp;";
+                        if (str.length > 1) {
+                            return str;
+                        }
+                        break;
+                    default:
+                }
+                return "无权限操作";
+            }
+        }
+
+        function formatbutton2(cellvalue, options, rowObject) {
+            var type = rowObject.modeltype;
+            var pid = rowObject.pid;
+            var hostips = new Array();
+            if (rowObject.hostip != undefined) {
+                hostips = rowObject.hostip.replace('[', '').replace(']', '').split(",");
+            }
+            if (islogin) {
+                switch (options.colModel.name) {
+                    case "operate":
+                        var str = "";
+                        var type = rowObject.modeltype;
+                        str += "<input style='height:14px;width:40px;' type='button' value='更新AI' onclick=\"updateairobotgo('" + hostips + "');\" />&nbsp;";
+                        return str;
+                        break;
+                    default:
+                }
+            } else {
+                return "无权限操作";
+            }
+        }
+
+        function getmodelname(modelid) {
+            switch (modelid) {
+                case 1:
+                    return "ES";
+                    break;
+                case 2:
+                    return "KAFKA";
+                    break;
+                case 3:
+                    return "CDH集群";
+                    break;
+                case 4:
+                    return "ES导入服务";
+                    break;
+                case 5:
+                    return "ES查询服务";
+                    break;
+                case 6:
+                    return "CDH导入服务";
+                    break;
+                case 7:
+                    return "CDH查询服务";
+                    break;
+                case 8:
+                    return "服务总线";
+                    break;
+                case 9:
+                    return "操作系统";
+                    break;
+                case 10:
+                    return "采集程序";
+                    break;
+                case 11:
+                    return "关系型数据库导入";
+                    break;
+                case 12:
+                    return "关系型数据库查询";
+                    break;
+                case 13:
+                    return "KAFKA管理服务";
+                    break;
+                case 14:
+                    return "数据量监控";
+                    break;
+                case 15:
+                    return "应用日志采集服务";
+                    break;
+                case 16:
+                    return "应用日志汇聚服务";
+                    break;
+                case 17:
+                    return "人员档案服务";
+                    break;
+                case 18:
+                    return "人员档案汇聚";
+                    break;
+                case 19:
+                    return "MPP导入服务";
+                    break;
+                case 21:
+                    return "实时分析引擎";
+                    break;
+                case 22:
+                    return "数据工坊引擎";
+                    break;
+                case 23:
+                    return "URL检测";
+                    break;
+                default:
+            }
+        }
+
+        function abt(url, options) {
+            window.open(url, options);
+        }
+
+        function addServer(stype) {
+            id = stype;
+            index = 0;
+            var titlename = "";
+            switch (stype) {
+                case '1':
+                    titlename = "ES";
+                    break;
+                case '2':
+                    titlename = "KAFKA";
+                    break;
+                case '3':
+                    titlename = "CDH集群";
+                    break;
+                case '4':
+                    titlename = "ES导入服务";
+                    break;
+                case '5':
+                    titlename = "ES查询服务";
+                    break;
+                case '6':
+                    titlename = "CDH导入服务";
+                    break;
+                case '7':
+                    titlename = "CDH查询服务";
+                    break;
+                case '8':
+                    titlename = "服务总线";
+                    break;
+                case '9':
+                    titlename = "操作系统";
+                    break;
+                case '10':
+                    titlename = "采集程序";
+                    break;
+                case '11':
+                    titlename = "关系型数据库导入";
+                    break;
+                case '12':
+                    titlename = "关系型数据库查询";
+                    break;
+                case '13':
+                    titlename = "KAFKA管理服务";
+                    break;
+                case '14':
+                    titlename = "数据量监控";
+                    break;
+                case '15':
+                    titlename = "应用日志采集服务";
+                    break;
+                case '16':
+                    titlename = "应用日志汇聚服务";
+                    break;
+                case '17':
+                    titlename = "人员档案服务";
+                    break;
+                case '18':
+                    titlename = "人员档案汇聚";
+                    break;
+                case '19':
+                    titlename = "MPP导入服务";
+                    break;
+                case '21':
+                    titlename = "实时分析引擎";
+                    break;
+                case '22':
+                    titlename = "数据工坊引擎";
+                    break;
+                default:
+            }
+            $("#edittitle").text("添加" + titlename);
+            $("#buildmsg").val("");
+            $("#serviceport").val("");
+            $("#serviceip").val("");
+            serviceselectinit(stype);
+            ControlContent(index);
+            syalert.syopen('alert4');
+        }
+
+        function buildservice() {
+
+            var serviceip = $("#serviceip").val();
+            var serviceport = $("#serviceport").val();
+            var serviceid = $("#serviceid").val();
+            var myEditor = ue.getPlainTxt();
+            $.ajax({
+                type: "post",
+                data: {
+                    config: myEditor,
+                    id: id,
+                    key: serviceid,
+                    serviceip: serviceip,
+                    serviceport: serviceport
+                },
+                url: "/ServiceMonitoringManagementController/buildSevice",
+                dataType: "text",
+                success: function (data) {
+                    $("#buildmsg").val(data.replaceAll("<br/>", "\r\n"));
+                }
+            });
+        }
+
+
+        function refreshiptagselect() {
+            var checkText = $("#iptag").val();
+            $.ajax({
+                type: "post",
+                url: "/ServiceMonitoringManagementController/getiptagvalue",
+                async: false,
+                dataType: "text",
+                success: function (data) {
+                    $("#iptag").get(0).options.length = 0;
+                    data = data.replace("[", "").replace("]", "").replace(" ", "").split(",");
+                    var i;
+                    var haveselectid = false;
+                    for (i = 0; i < data.length; i++) {
+                        if (data[i] != "") {
+                            if (checkText == data[i]) {
+                                $("#iptag").append("<option value='" + data[i] + "' selected=\"selected\">" + data[i] + "</option>");
+                                haveselectid = true;
+                            } else {
+                                $("#iptag").append("<option value='" + data[i] + "'>" + data[i] + "</option>");
+                            }
+                        }
+                    }
+                    if (haveselectid) {
+                        $("#iptag").append("<option value='全部区域'>全部区域</option>");
+                    } else {
+                        $("#iptag").append("<option value='全部区域' selected=\"selected\">全部区域</option>");
+                    }
+                    $("#iptag").change(function () {
+                        jQuery("#gridTable2").jqGrid("setGridParam", {
+                            postData: {
+                                'page': $('#gridTable2').jqGrid('getGridParam', 'page'),
+                                'rows': $('#gridTable2').getGridParam('rowNum'),
+                                'iptag': $('#iptag').val()
+                            }
+                        }).trigger("reloadGrid");
+                        jQuery("#gridTable").jqGrid("setGridParam", {
+                            postData: {
+                                'page': $('#gridTable').jqGrid('getGridParam', 'page'),
+                                'rows': $('#gridTable').getGridParam('rowNum'),
+                                'iptag': $('#iptag').val()
+                            }
+                        }).trigger("reloadGrid");
+                    });
+
+                }
+            });
+
+
+        }
+
+    </script>
+</head>
+<body>
+<div id="firstDiv"></div>
+<div onmousemove="webonmousemove()" style="width: 100%;height:100%;position: absolute;">
+    <a href="version.html" target="_blank"><span style='color: blue;'>更新日志</span></a>
+    <select class="nice-select" name="iptag" id="iptag">
+    </select>
+    <input id="tokenkey" class="nice-input"/>&nbsp;&nbsp;&nbsp;&nbsp;<button id="login">登录</button>
+    <button id="logout">登出</button>
+    <a href="config.html" target="_blank"><span style='color: blue;'>设置</span></a>
+<!--    <button style="position: absolute;left: 900px;" id="setupmoniter">安装 Moniter</button>-->
+
+    <button style="position: absolute;left: 1020px;" id="download">导出</button>
+    <div class="tabbox">
+        <div class="tab">
+            <a href="javascript:;" class="on">类型分类</a>
+            <a href="javascript:;">地址分类</a>
+            <a href="javascript:;">服务管理</a>
+        </div>
+        <div class="content">
+            <ul>
+                <li class="tabboxli"><p>
+                    <div class="gridPanel">
+                        <table id="gridTable"></table>
+                        <div id="gridPager"></div>
+                    </div>
+                    </p></li>
+                <li class="tabboxli"><p>
+                    <div class="gridPanel2">
+                        <table id="gridTable2"></table>
+                        <div id="gridPager2"></div>
+                    </div>
+                    </p></li>
+                <li class="tabboxli"><p>
+                    <div class="gridPanel3">
+                        <div id="tt" class="easyui-tabs" style="width:1080px;height:700px"></div>
+                    </div>
+                    </p></li>
+            </ul>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    var index = 0;
+
+    function parenttab(type, hostip, key, pid, taskid) {
+        if ("undefined" == pid) {
+            pid = "无";
+        }
+
+        $('.tabbox .content li.tabboxli').hide();
+        $('.tabbox .tab a:eq(' + 2 + ')').addClass('on').siblings().removeClass('on');
+        $('.tabbox .content ul li.tabboxli:eq(' + 2 + ')').show().siblings().hide();
+        var selecttabp = $('#tt').tabs('getTab', getmodelname(type) + '-' + hostip + '-' + pid);
+        if (selecttabp != null) {
+            $('#tt').tabs('select', getmodelname(type) + '-' + hostip + '-' + pid);
+            return;
+        }
+        index++;
+        var contentstr = '';
+        if (3 == type && "无" == pid) {
+            contentstr += '<a href="http://' + hostip + ':7180" target="_blank" class="easyui-linkbutton" data-options="plain:true">管理</a>';
+        }
+        if (9 != type && "无" != pid || (3 == type)) {
+            contentstr += '<a href="#" class="easyui-linkbutton" data-options="plain:true" onclick="subleveltab(\'tt' + index + '\',\'/ServiceMonitoringManagementController/readConfig?key=' + key + '&type=' + type + '\',\'配置\');">配置</a>';
+        }
+        if (14 != type && 9 != type && "无" != pid) {
+            contentstr += '<a href="#" class="easyui-linkbutton" data-options="plain:true" onclick="subleveltab(\'tt' + index + '\',\'/ServiceMonitoringManagementController/readLog?key=' + key + '&type=' + type + '\',\'日志\');">日志</a>';
+        }
+        if (1 == type && "无" == pid) {
+            contentstr += '<a href="#" class="easyui-linkbutton" data-options="plain:true" onclick="subleveltab(\'tt' + index + '\',\'http://' + hostip + ':9200/_plugin/head/\',\'head\');">head</a>' +
+                '<a href="#" class="easyui-linkbutton" data-options="plain:true" onclick="subleveltab(\'tt' + index + '\',\'http://' + hostip + ':9200/_plugin/sql/\',\'sql\');">sql</a>' +
+                '<a href="#" class="easyui-linkbutton" data-options="plain:true" onclick="subleveltab(\'tt' + index + '\',\'http://' + hostip + ':9200/_cat/nodes?v\',\'内存\');">内存</a>' +
+                '<a href="#" class="easyui-linkbutton" data-options="plain:true" onclick="subleveltab(\'tt' + index + '\',\'http://' + hostip + ':9200/_cat/allocation?v\',\'硬盘\');">硬盘</a>' +
+                '<a href="#" class="easyui-linkbutton" data-options="plain:true" onclick="subleveltab(\'tt' + index + '\',\'http://' + hostip + ':9200/_cat/indices?v\',\'索引\');">索引</a>';
+        }
+        if (2 == type && "无" == pid) {
+            contentstr += '<a href="#" class="easyui-linkbutton" data-options="plain:true" onclick="subleveltab(\'tt' + index + '\',\'/ServiceMonitoringManagementController/readkafkagrouplist?key=' + key + '&type=' + type + '\',\'group列表\');">group列表</a>' +
+                '<a href="#" class="easyui-linkbutton" data-options="plain:true" onclick="subleveltab(\'tt' + index + '\',\'/ServiceMonitoringManagementController/readkafkatopiclist?key=' + key + '&type=' + type + '\',\'topic列表\');">topic列表</a>' +
+                '<a href="#" class="easyui-menubutton" data-options="menu:\'#mm1-' + index + '\'">topic明细</a>' +
+                '<a href="#" class="easyui-menubutton" data-options="menu:\'#mm2-' + index + '\'">group消费情况</a>' +
+                '<a href="#" class="easyui-menubutton" data-options="menu:\'#mm3-' + index + '\'">性能报告</a>' +
+                '<a href="#" class="easyui-menubutton" data-options="menu:\'#mm4-' + index + '\'">topic数据量</a>';
+        }
+        var mmstr = '';
+        if (2 == type && "无" == pid) {
+            mmstr += '<div id="mm1-' + index + '" class="menu-content" style="padding:10px;text-align:left">\n' +
+                'Topic:<input class="easyui-textbox" id="topicname1-' + index + '" style="outline: 2px;"/> <a href="#" class="easyui-linkbutton" data-options="plain:true" onclick="subleveltab(\'tt' + index + '\',\'/ServiceMonitoringManagementController/readkafkatopicinfo?key=' + key + '&type=' + type + '&topic=\'+$(\'#topicname1-' + index + '\').val(),\'topic明细-\'+$(\'#topicname1-' + index + '\').val());" >查询</a>' +
+                '</div>' +
+                '<div id="mm2-' + index + '" class="menu-content" style="padding:10px;text-align:left">\n' +
+                'Group:<input class="easyui-textbox" id="groupname2-' + index + '" style="outline: 2px;"/> <a href="#" class="easyui-linkbutton" data-options="plain:true" onclick="subleveltab(\'tt' + index + '\',\'/ServiceMonitoringManagementController/readkafkagroupinfo?key=' + key + '&type=' + type + '&group=\'+$(\'#groupname2-' + index + '\').val(),\'group消费情况-\'+$(\'#groupname2-' + index + '\').val());" >查询</a>' +
+                '</div>' +
+                '<div id="mm3-' + index + '" class="menu-content" style="padding:10px;text-align:left">\n' +
+                'Topic:<input class="easyui-textbox" id="topicname3-' + index + '" style="outline: 2px;"/> Group:<input class="easyui-textbox" id="groupname3-' + index + '" style="outline: 2px;"/> <a href="#" class="easyui-linkbutton" data-options="plain:true" onclick="subleveltab(\'tt' + index + '\',\'/ServiceMonitoringManagementController/readkafkaperformance?key=' + key + '&type=' + type + '&topic=\'+$(\'#topicname3-' + index + '\').val()+\'&group=\' + $(\'#groupname3-' + index + '\').val(),\'性能报告-\'+$(\'#topicname3-' + index + '\').val()+\'(\' + $(\'#groupname3-' + index + '\').val()+\')\');" >查询</a>' +
+                '</div>' +
+                '<div id="mm4-' + index + '" class="menu-content" style="padding:10px;text-align:left">\n' +
+                'Topic:<input class="easyui-textbox" id="topicname4-' + index + '" style="outline: 2px;"/> <a href="#" class="easyui-linkbutton" data-options="plain:true" onclick="subleveltab(\'tt' + index + '\',\'/ServiceMonitoringManagementController/readkafkatopicdatanum?key=' + key + '&type=' + type + '&topic=\'+$(\'#topicname4-' + index + '\').val(),\'topic数据量-\'+$(\'#topicname4-' + index + '\').val());" >查询</a>' +
+                '</div>';
+        }
+        $('#tt').tabs('add', {
+            title: getmodelname(type) + '-' + hostip + '-' + pid,
+            content: '<div class="easyui-panel" style="padding: 5px; width: 1060px;">' +
+                '<a href="#" class="easyui-linkbutton" data-options="plain:true" onclick="subleveltab(\'tt' + index + '\',\'/ServiceMonitoringManagementController/readData?key=' + key + '&type=' + type + '\',\'详情\');">详情</a>' +
+                '<a href="#" class="easyui-linkbutton" data-options="plain:true" onclick="subleveltab_data(\'tt' + index + '\',\'/ServiceMonitoringManagementController/readMoniterInfoData?pid='+ pid +'&&hostip='+ hostip +'&&taskid=' + taskid + '\',\'样例数据\');">样例数据</a>' +
+                contentstr +
+                '</div>' +
+                mmstr +
+                '<div id="tt' + index + '" class="easyui-tabs" style="width:1060px;height:620px"></div>',
+            closable: true,
+            showHeader: true
+        });
+        $('#tt').tabs('select', getmodelname(type) + '-' + hostip + '-' + pid);
+    }
+
+
+    function subleveltab(tabid, url, name) {
+        var selecttab = $('#' + tabid).tabs('getTab', name);
+        if (selecttab != null) {
+            $('#' + tabid).tabs('select', name);
+            return;
+        }
+        $('#' + tabid).tabs('add', {
+            title: name,
+            content: '<iframe id="' + tabid + '-iframe" src="' + url + '" width="100%" height="580px" security="restricted" sandbox="allow-same-origin allow-scripts" ></iframe>',
+            closable: true,
+            tools: [{
+                iconCls: 'icon-mini-refresh',
+                handler: function () {
+                    //选中当前tab页
+                    $('#' + tabid).tabs('select', name);
+                    //获取选中的tab页
+                    var tab = $('#' + tabid).tabs('getSelected');
+                    var index = $('#tt').tabs('getTabIndex', tab);
+                    //刷新
+                    $('#' + tabid).tabs('update', {
+                        tab: tab,
+                        options: {
+                            title: name,
+                            content: '<iframe id="' + tabid + '-iframe" src="' + url + '" width="100%" height="500px" security="restricted" sandbox="allow-same-origin allow-scripts" ></iframe>'
+                        }
+                    });
+                }
+            }]
+        });
+    }
+
+    function subleveltab_data(tabid, yinw, name) {
+        var selecttab = $('#' + tabid).tabs('getTab', name);
+        if (selecttab != null) {
+            $('#' + tabid).tabs('select', name);
+            return;
+        }
+        $('#' + tabid).tabs('add', {
+            title: name,
+            content: '<iframe id="' + tabid + '-iframe" src="' + url + '" width="100%" height="580px" security="restricted" sandbox="allow-same-origin allow-scripts" ></iframe>',
+            closable: true,
+            tools: [{
+                iconCls: 'icon-mini-refresh',
+                handler: function () {
+                    //选中当前tab页
+                    $('#' + tabid).tabs('select', name);
+                    //获取选中的tab页
+                    var tab = $('#' + tabid).tabs('getSelected');
+                    var index = $('#tt').tabs('getTabIndex', tab);
+                    //刷新
+                    $('#' + tabid).tabs('update', {
+                        tab: tab,
+                        options: {
+                            title: name,
+                            content: '<iframe id="' + tabid + '-iframe" src="' + url + '" width="100%" height="500px" security="restricted" sandbox="allow-same-origin allow-scripts" ></iframe>'
+                        }
+                    });
+                }
+            }]
+        });
+
+
+        // $.ajax({
+        //     type: "post",
+        //     url: "/ServiceMonitoringManagementController/testMoniterserver",
+        //     dataType: "text",
+        //     success: function (data) {
+        //         if (data == "true") {
+        //             var selecttab = $('#' + tabid).tabs('getTab', name);
+        //             if (selecttab != null) {
+        //                 $('#' + tabid).tabs('select', name);
+        //                 return;
+        //             }
+        //             $('#' + tabid).tabs('add', {
+        //                 title: name,
+        //                 content: '<iframe id="' + tabid + '-iframe" src="' + url + '" width="100%" height="580px" security="restricted" sandbox="allow-same-origin allow-scripts" ></iframe>',
+        //                 closable: true,
+        //                 tools: [{
+        //                     iconCls: 'icon-mini-refresh',
+        //                     handler: function () {
+        //                         //选中当前tab页
+        //                         $('#' + tabid).tabs('select', name);
+        //                         //获取选中的tab页
+        //                         var tab = $('#' + tabid).tabs('getSelected');
+        //                         var index = $('#tt').tabs('getTabIndex', tab);
+        //                         //刷新
+        //                         $('#' + tabid).tabs('update', {
+        //                             tab: tab,
+        //                             options: {
+        //                                 title: name,
+        //                                 content: '<iframe id="' + tabid + '-iframe" src="' + url + '" width="100%" height="500px" security="restricted" sandbox="allow-same-origin allow-scripts" ></iframe>'
+        //                             }
+        //                         });
+        //                     }
+        //                 }]
+        //             });
+        //         } else {
+        //             alert("暂未接入【moniter】服务!");
+        //         }
+        //     },
+        //     error: function (data) {
+        //         alert("暂未接入【moniter】服务!");
+        //     }
+        // });
+    }
+</script>
+
+
+<div class="sy-alert sy-alert-model animated" sy-enter="zoomIn" sy-leave="zoomOut" sy-type="confirm" sy-mask="true"
+     id="alert4">
+    <div id="edittitle"
+         style="clear: both;font-family: KaiTi_GB2312,KaiTi,STKaiti;font-weight: bold;font-size: 150%;text-align: center;">
+        101
+    </div>
+    <div style="width:450px;margin:0 auto;">
+        <!--  标题进度条 start-->
+        <div class="content" style="margin:0px 0 0 0;width: 100%;">
+            <div class="processBar">
+                <div id="line0" class="bar">
+                    <div id="point0" class="c-step c-select"></div>
+                </div>
+                <div class="text" style="margin: 10px -30px;"><span class='poetry'>位置选择</span></div>
+            </div>
+            <div class="processBar">
+                <div id="line1" class="bar">
+                    <div id="point1" class="c-step"></div>
+                </div>
+                <div class="text" style="margin: 10px -30px;"><span class='poetry'>配置文件</span></div>
+            </div>
+            <div class="processBar" style="width:10px;">
+                <div id="line2" class="bar" style="width: 0;">
+                    <div id="point2" class="c-step"></div>
+                </div>
+                <div class="text" style="margin: 10px -30px;"><span class='poetry'>服务部署</span></div>
+            </div>
+        </div>
+        <!--  标题进度条 end-->
+
+        <div id="MainContent" style="margin:0px 0 0 0;">
+            <div class="content" id="process1" style="height:350px">
+			<span class='poetry'>
+                <div id="selectip">
+                    选择地址：
+                <div class="nice-select">
+		            <input id="serviceip" type="text" oninput="searchList(this.value)"/>
+		            <ul id="list"></ul>
+                </div>
+                </div>
+                 <div id="selectserver">
+                     选择服务：<br/>
+                <select class="nice-input" id="serviceid">
+                </select>
+                 </div>
+                <div id="selectport">
+                输入端口：<br/>
+                <input id="serviceport" class="nice-input"/>
+                </div>
+                <div id="selectpserver">
+                <div id='esdiv'>依赖服务：<br/>
+                <input id="esid" class="nice-input"/>
+                </div>
+                    </div>
+
+			</span>
+            </div>
+            <div class="content" id="process2" style="height:300px">
+			<span class='poetry'>
+				<script type="text/plain" id="myEditor">
+
+                </script>
+			</span>
+            </div>
+            <div class="content" id="process3" style="height:300px">
+			<span class='poetry'>
+				<button onclick="buildservice();">开始部署</button>
+                <textarea id="buildmsg" rows="16" cols="60" readonly="readonly" style="resize: none;"></textarea>
+			</span>
+            </div>
+        </div>
+        <div style="clear: both;"></div>
+        <div style="text-align: center;">
+            <button id="previous_step">上一步</button>
+            <button id="next_step">下一步</button>
+        </div>
+
+    </div>
+    <div class="sy-btn">
+        <button onClick="syalert.syhide('alert4')">关闭</button>
+        <!--        <button onClick="ok('alert4')">确定</button>-->
+    </div>
+</div>
+</body>
+</html>
