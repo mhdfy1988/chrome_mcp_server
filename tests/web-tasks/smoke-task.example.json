@@ -1,0 +1,118 @@
+{
+  "taskName": "site-search-smoke",
+  "baseUrl": "https://example.com",
+  "goal": "验证站点首页搜索流程是否按预期工作，并在偏差发生时留下结构化证据。",
+  "preconditions": [
+    "不需要登录",
+    "允许打开真实网站",
+    "不允许执行高风险操作"
+  ],
+  "forbiddenActions": [
+    "delete",
+    "restart",
+    "stop",
+    "shutdown",
+    "submit_real_order",
+    "pay"
+  ],
+  "defaults": {
+    "preferSnapshotFlow": true,
+    "allowDirectSelector": false,
+    "stepTimeoutMs": 4000,
+    "captureScreenshotOnEachCriticalStep": true,
+    "captureConsoleLogsOnFailure": true,
+    "captureNetworkLogsOnFailure": true
+  },
+  "steps": [
+    {
+      "id": "open-home",
+      "name": "打开首页",
+      "action": "open_page",
+      "input": {
+        "url": "https://example.com"
+      },
+      "expect": {
+        "titleContains": "Example",
+        "changeType": "navigation"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    },
+    {
+      "id": "locate-search-box",
+      "name": "定位搜索框",
+      "action": "find_elements",
+      "targetHint": "页面顶部搜索框",
+      "expect": {
+        "atLeastOneElement": true
+      },
+      "evidence": [
+        "page_snapshot"
+      ]
+    },
+    {
+      "id": "type-keyword",
+      "name": "输入关键词",
+      "action": "type_text",
+      "targetHint": "顶部搜索框",
+      "input": {
+        "text": "AI Agent"
+      },
+      "expect": {
+        "inputValueContains": "AI Agent"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    },
+    {
+      "id": "submit-search",
+      "name": "提交搜索",
+      "action": "click_and_wait",
+      "targetHint": "搜索按钮",
+      "expect": {
+        "selectorVisible": ".search-result, .result-list, [data-testid='search-result']",
+        "changeType": "same_page_update",
+        "successSignal": "selector"
+      },
+      "allowedBranches": [
+        {
+          "name": "新页结果",
+          "expect": {
+            "changeType": "popup",
+            "successSignal": "popup"
+          }
+        },
+        {
+          "name": "结果页跳转",
+          "expect": {
+            "urlContains": "search",
+            "changeType": "navigation",
+            "successSignal": "url"
+          }
+        }
+      ],
+      "evidence": [
+        "screenshot",
+        "page_snapshot"
+      ]
+    }
+  ],
+  "reporting": {
+    "recordFields": [
+      "stepId",
+      "expected",
+      "actual",
+      "title",
+      "url",
+      "changeType",
+      "successSignal",
+      "pageSource",
+      "observed",
+      "domObservation",
+      "screenshotPath"
+    ],
+    "useTemplate": "docs/bug-report-template.md"
+  }
+}

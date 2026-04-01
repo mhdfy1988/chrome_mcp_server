@@ -4,6 +4,7 @@ import type { PageSummary } from "./types.js";
 
 export interface BrowserRuntimeDeps {
   config: ChromeConfig;
+  isManagedBrowser(): boolean;
   ensureBrowser(startIfNeeded?: boolean): Promise<Browser | undefined>;
   syncPages(): Promise<void>;
   trackPage(page: Page): string;

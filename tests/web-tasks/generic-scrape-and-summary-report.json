@@ -1,0 +1,94 @@
+{
+  "taskName": "generic-scrape-and-summary-report",
+  "baseUrl": "https://example.com/list",
+  "goal": "通用列表页数据抓取与 Markdown 汇总模板，适合改造成内部榜单、公告、资料目录等页面。",
+  "preconditions": [
+    "按实际页面填写是否需要登录",
+    "确认页面允许读取公开信息",
+    "不执行删除、停服、付款等高风险动作"
+  ],
+  "forbiddenActions": [
+    "delete",
+    "restart",
+    "stop",
+    "shutdown",
+    "submit_real_order",
+    "pay"
+  ],
+  "defaults": {
+    "preferSnapshotFlow": true,
+    "allowDirectSelector": true,
+    "stepTimeoutMs": 6000,
+    "captureScreenshotOnEachCriticalStep": true,
+    "captureConsoleLogsOnFailure": true,
+    "captureNetworkLogsOnFailure": true
+  },
+  "steps": [
+    {
+      "id": "open-list-page",
+      "name": "打开列表页",
+      "action": "open_page",
+      "input": {
+        "url": "https://example.com/list"
+      },
+      "expect": {
+        "titleContains": "Example",
+        "changeType": "navigation"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    },
+    {
+      "id": "snapshot-list-page",
+      "name": "记录页面结构快照",
+      "action": "page_snapshot",
+      "targetHint": "主列表页",
+      "expect": {
+        "textContains": "List"
+      },
+      "evidence": [
+        "page_snapshot"
+      ]
+    },
+    {
+      "id": "extract-list-content",
+      "name": "提取列表正文",
+      "action": "extract_text",
+      "targetHint": "列表容器、表格容器或公告列表区域",
+      "expect": {
+        "textContains": "Item"
+      },
+      "evidence": [
+        "page_snapshot"
+      ]
+    }
+  ],
+  "reporting": {
+    "recordFields": [
+      "stepId",
+      "expected",
+      "actual",
+      "title",
+      "url",
+      "changeType",
+      "successSignal",
+      "pageSource",
+      "observed",
+      "domObservation",
+      "screenshotPath"
+    ],
+    "useTemplate": "docs/bug-report-template.md"
+  },
+  "output": {
+    "kind": "markdown_table",
+    "path": ".tmp/reports/list-summary.md",
+    "columns": [
+      "序号",
+      "标题",
+      "摘要",
+      "链接"
+    ],
+    "limit": 20
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "taskName": "vimeo-video-search-browse",
+  "baseUrl": "https://vimeo.com/",
+  "goal": "验证公开视频站的搜索、结果列表和视频详情页打开流程。",
+  "preconditions": [
+    "不需要登录",
+    "允许访问公开互联网",
+    "不执行点赞、评论、登录动作"
+  ],
+  "forbiddenActions": [
+    "login",
+    "logout",
+    "like",
+    "follow",
+    "submit_comment",
+    "upload"
+  ],
+  "defaults": {
+    "preferSnapshotFlow": true,
+    "allowDirectSelector": false,
+    "stepTimeoutMs": 7000,
+    "captureScreenshotOnEachCriticalStep": true,
+    "captureConsoleLogsOnFailure": true,
+    "captureNetworkLogsOnFailure": true
+  },
+  "steps": [
+    {
+      "id": "open-home",
+      "name": "打开 Vimeo 首页",
+      "action": "open_page",
+      "input": {
+        "url": "https://vimeo.com/"
+      },
+      "expect": {
+        "titleContains": "Vimeo",
+        "changeType": "navigation"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    },
+    {
+      "id": "locate-search",
+      "name": "定位搜索框",
+      "action": "find_elements",
+      "targetHint": "顶部搜索框",
+      "expect": {
+        "atLeastOneElement": true
+      },
+      "evidence": [
+        "page_snapshot"
+      ]
+    },
+    {
+      "id": "type-keyword",
+      "name": "输入视频关键词",
+      "action": "type_text",
+      "targetHint": "顶部搜索框",
+      "input": {
+        "text": "AI agent"
+      },
+      "expect": {
+        "inputValueContains": "AI agent"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    },
+    {
+      "id": "submit-search",
+      "name": "提交视频搜索",
+      "action": "click_and_wait",
+      "targetHint": "搜索按钮或搜索提交控件",
+      "expect": {
+        "urlContains": "search",
+        "changeType": "navigation",
+        "successSignal": "url"
+      },
+      "allowedBranches": [
+        {
+          "name": "同页结果列表",
+          "expect": {
+            "changeType": "same_page_update",
+            "successSignal": "selector",
+            "selectorVisible": "a[href*='/'][title], img"
+          }
+        }
+      ],
+      "evidence": [
+        "screenshot",
+        "page_snapshot"
+      ]
+    },
+    {
+      "id": "open-first-video",
+      "name": "打开第一条视频详情",
+      "action": "click_and_wait",
+      "targetHint": "结果列表第一条视频卡片或第一条视频标题",
+      "expect": {
+        "changeType": "navigation",
+        "successSignal": "url",
+        "urlContains": "vimeo.com/"
+      },
+      "allowedBranches": [
+        {
+          "name": "新页视频详情",
+          "expect": {
+            "changeType": "popup",
+            "successSignal": "popup"
+          }
+        }
+      ],
+      "evidence": [
+        "screenshot",
+        "page_snapshot"
+      ]
+    }
+  ],
+  "reporting": {
+    "recordFields": [
+      "stepId",
+      "expected",
+      "actual",
+      "title",
+      "url",
+      "changeType",
+      "successSignal",
+      "pageSource",
+      "observed",
+      "domObservation",
+      "screenshotPath"
+    ],
+    "useTemplate": "docs/bug-report-template.md"
+  }
+}

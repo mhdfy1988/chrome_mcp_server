@@ -4,6 +4,7 @@ import type { BrowserRuntimeDeps } from "../core/runtime-deps.js";
 import type {
   ClickAndWaitChangeType,
   ClickAndWaitResult,
+  ContentReadySignal,
   DomObservationSummary,
   ClickAndWaitSuccessSignal,
   WaitMatchMode,
@@ -16,6 +17,10 @@ export interface ActionWaitOptions {
   waitForSelector?: string;
   waitForTitle?: string;
   waitForUrl?: string;
+  contentReadySelector?: string;
+  contentReadyText?: string;
+  contentReadyTextSelector?: string;
+  contentReadyTimeoutMs?: number;
   matchMode?: WaitMatchMode;
   observeDom?: boolean;
 }
@@ -33,6 +38,8 @@ export interface ActionObservationResult {
   };
   changed: boolean;
   observed: ClickAndWaitResult["observed"];
+  contentReady: boolean;
+  contentReadySignal: ContentReadySignal;
   domObservation: DomObservationSummary;
   note?: string;
 }
@@ -56,6 +63,16 @@ export type ActionVerificationRule =
   | {
       kind: "title";
       expected: string;
+      matchMode?: WaitMatchMode;
+    }
+  | {
+      kind: "contentSelectorVisible";
+      selector: string;
+    }
+  | {
+      kind: "contentText";
+      text: string;
+      textSelector?: string;
       matchMode?: WaitMatchMode;
     }
   | {
@@ -282,8 +299,24 @@ export function determineActionSuccessSignal(
   observation: ActionObservationResult,
   options: ActionWaitOptions,
 ): ClickAndWaitSuccessSignal {
+  if (observation.pageSource === "popup" || observation.observed.popup) {
+    return "popup";
+  }
+
+  if (observation.pageSource === "new_target" || observation.observed.target) {
+    return "new_target";
+  }
+
   if (options.waitForSelector && observation.observed.selector) {
     return "selector";
+  }
+
+  if (options.contentReadySelector && observation.observed.contentSelector) {
+    return "content_selector";
+  }
+
+  if (options.contentReadyText && observation.observed.contentText) {
+    return "content_text";
   }
 
   if (options.waitForUrl && observation.observed.url) {
@@ -292,14 +325,6 @@ export function determineActionSuccessSignal(
 
   if (options.waitForTitle && observation.observed.title) {
     return "title";
-  }
-
-  if (observation.observed.popup) {
-    return "popup";
-  }
-
-  if (observation.observed.target) {
-    return "new_target";
   }
 
   if (observation.observed.navigation) {
@@ -545,6 +570,60 @@ async function evaluateVerificationRules(
         });
         break;
       }
+      case "contentSelectorVisible": {
+        const result = await readElementVisibilityForVerification(
+          observation.finalPage,
+          rule.selector,
+        );
+        reports.push({
+          kind: "contentSelectorVisible",
+          passed: result.ok && result.visible,
+          detail: result.ok
+            ? `selector=${rule.selector}; visible=${result.visible}`
+            : `selector=${rule.selector}; error=${result.note ?? "unknown"}`,
+        });
+        break;
+      }
+      case "contentText": {
+        try {
+          const actual = await observation.finalPage.evaluate(
+            ({ expectedSelector }) => {
+              const root = expectedSelector
+                ? document.querySelector(expectedSelector)
+                : document.body;
+
+              if (!root) {
+                return "";
+              }
+
+              if (
+                root instanceof HTMLInputElement ||
+                root instanceof HTMLTextAreaElement ||
+                root instanceof HTMLSelectElement
+              ) {
+                return String(root.value ?? "");
+              }
+
+              const element = root as HTMLElement;
+              return String(element.innerText ?? root.textContent ?? "");
+            },
+            { expectedSelector: rule.textSelector },
+          );
+          const mode = rule.matchMode ?? "contains";
+          reports.push({
+            kind: "contentText",
+            passed: textMatches(actual, rule.text, mode),
+            detail: `expected(${mode})=${rule.text}; actual=${actual}`,
+          });
+        } catch (error) {
+          reports.push({
+            kind: "contentText",
+            passed: false,
+            detail: `selector=${rule.textSelector ?? "document.body"}; error=${error instanceof Error ? error.message : String(error)}`,
+          });
+        }
+        break;
+      }
       case "pageSwitched": {
         const switched =
           observation.pageSource !== "current" ||
@@ -685,6 +764,74 @@ async function waitForActionConditions(
   }
 }
 
+async function waitForContentReadyConditions(
+  page: Page,
+  options: ActionWaitOptions,
+  observed: ActionObservationResult["observed"],
+  timeoutMs: number,
+): Promise<void> {
+  const matchMode = options.matchMode ?? "contains";
+
+  if (options.contentReadySelector) {
+    await page
+      .locator(options.contentReadySelector)
+      .setTimeout(timeoutMs)
+      .wait()
+      .then(() => {
+        observed.contentSelector = true;
+      })
+      .catch(() => {
+        // 继续依赖最终校验给出失败原因。
+      });
+  }
+
+  if (options.contentReadyText) {
+    await page
+      .waitForFunction(
+        ({
+          expectedText,
+          expectedSelector,
+          currentMatchMode,
+        }) => {
+          const root = expectedSelector
+            ? document.querySelector(expectedSelector)
+            : document.body;
+
+          if (!root) {
+            return false;
+          }
+
+          const actual =
+            root instanceof HTMLInputElement ||
+            root instanceof HTMLTextAreaElement ||
+            root instanceof HTMLSelectElement
+              ? String(root.value ?? "")
+              : String((root as HTMLElement).innerText ?? root.textContent ?? "");
+
+          if (currentMatchMode === "exact") {
+            return actual === expectedText;
+          }
+
+          return actual.includes(expectedText);
+        },
+        {
+          timeout: timeoutMs,
+        },
+        {
+          expectedText: options.contentReadyText,
+          expectedSelector: options.contentReadyTextSelector,
+          currentMatchMode: matchMode,
+        },
+      )
+      .then(() => {
+        observed.contentText = true;
+      })
+      .catch(() => {
+        // 继续依赖最终校验给出失败原因。
+      });
+  }
+}
+
 export async function observeAction(
   deps: BrowserRuntimeDeps,
   page: Page,
@@ -698,6 +845,7 @@ export async function observeAction(
 
   const before = await capturePageState(page);
   const timeoutMs = options.timeoutMs ?? deps.config.stepTimeoutMs;
+  const contentReadyTimeoutMs = options.contentReadyTimeoutMs ?? timeoutMs;
   const waitUntil = options.waitUntil ?? "domcontentloaded";
   const domObserverStarted = options.observeDom
     ? await startDomObservation(page)
@@ -718,6 +866,8 @@ export async function observeAction(
     selector: false,
     title: false,
     url: false,
+    contentSelector: false,
+    contentText: false,
     dom: false,
     stateChanged: false,
     popup: false,
@@ -854,6 +1004,13 @@ export async function observeAction(
     deps.setCurrentPageId(finalPageId);
   }
 
+  await waitForContentReadyConditions(
+    finalPage,
+    options,
+    observed,
+    contentReadyTimeoutMs,
+  );
+
   const after = await capturePageState(finalPage);
   observed.stateChanged =
     finalPage !== page || hasMeaningfulPageChange(before, after);
@@ -869,6 +1026,16 @@ export async function observeAction(
     observed.target ||
     observed.pageCountChanged;
 
+  const contentReady =
+    (!options.contentReadySelector || observed.contentSelector) &&
+    (!options.contentReadyText || observed.contentText);
+  const contentReadySignal: ContentReadySignal =
+    options.contentReadySelector && observed.contentSelector
+      ? "selector"
+      : options.contentReadyText && observed.contentText
+        ? "text"
+        : "none";
+
   return {
     finalPage,
     pageSource,
@@ -876,6 +1043,8 @@ export async function observeAction(
     after,
     changed,
     observed,
+    contentReady,
+    contentReadySignal,
     domObservation,
     note: changed
       ? undefined
@@ -959,6 +1128,13 @@ export async function runActionWithVerification(
     failureReasons.push(
       "只观察到弱变化（例如仅标题/URL轻微漂移或噪声状态），未命中强信号。",
     );
+  }
+
+  if (
+    (options.contentReadySelector || options.contentReadyText) &&
+    !lastObservation.contentReady
+  ) {
+    failureReasons.push("路由可能已变化，但内容区仍未达到就绪条件。");
   }
 
   throw new Error(

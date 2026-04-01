@@ -39,7 +39,7 @@
 - 页面理解：`page_snapshot`、`extract_text`（高级模式可额外启用 `evaluate`）
 - 元素定位：`find_elements`
 - 同步等待：`wait_for`
-- 页面操作：`click`、`type_text`、`press_key`（高级模式可额外启用 `submit_input`）
+- 页面操作：`click`、`type_text`、`press_key`、`press_key_and_wait`（高级模式可额外启用 `submit_input`）
 - 结果留证：`screenshot`
 - 调试辅助：`console_logs`、`network_logs`
 
@@ -71,7 +71,7 @@
 
 1. 先看页面，再找明确元素。
 2. 有明确输入框时，先 `click` 再 `type_text`。
-3. 有明确按钮或链接时，优先 `click` / `click_and_wait`，不要先用 `submit_input`。
+3. 搜索框、查询框这类输入提交时，优先考虑 `Enter` 或明确提交按钮，不要先用 `submit_input`。
 4. 一次只做一个关键动作，动作后立刻回读页面状态。
 5. 只有主路径失败，才进入 `find_primary_inputs`、`submit_input`、`evaluate` 这些兜底工具。
 
@@ -84,9 +84,12 @@
 3. `find_elements` 找出明确的输入框、按钮或链接，并拿到对应 `ref`
 4. `click` 点击输入框或目标元素，优先传 `ref`
 5. `type_text` 输入文本，优先传 `ref`
-6. `click_and_wait` 点击明确按钮或链接，并等待页面变化，优先传 `ref`
-7. `page_snapshot` 或 `list_pages` 回读当前页面状态
-8. `screenshot` 留证，必要时再看 `console_logs` / `network_logs`
+6. 搜索框、查询框场景下，可先用 `find_submit_targets` 查看 `preferredSubmitMethod`
+7. `preferredSubmitMethod=enter` 时，优先用 `press_key_and_wait(key=Enter)`
+8. 页面本身有明确提交按钮，或 `preferredSubmitMethod=click` 时，再用 `click_and_wait`
+9. 如果页面是“URL 先变、内容后到”，在第 7 或第 8 步同时传 `waitForUrl` 和 `contentReadySelector` / `contentReadyText`
+10. `page_snapshot` 或 `list_pages` 回读当前页面状态
+11. `screenshot` 留证，必要时再看 `console_logs` / `network_logs`
 
 如果你显式开启了 `advanced` 模式，而第 3 到第 6 步仍然不够，再按这个顺序补兜底：
 
@@ -157,6 +160,9 @@
   说明：高级模式。仅在 `page_snapshot` 和 `find_elements` 仍然不够时使用，扫描整页可见输入控件，按“主输入框”的概率排序。
   适合作为兜底或诊断工具，定位页面没有明确“搜索”字样时的导航区或顶部主输入框。
 
+- `find_submit_targets`
+  说明：围绕指定输入框扫描附近可能承担提交动作的控件，并返回 `preferredSubmitMethod`，用于判断当前更适合优先按 `Enter`，还是优先点击邻近提交控件。
+
 - `extract_text`
   说明：提取整个页面或某个元素的文本内容。优先传 `ref`；也支持 `selector`。
 
@@ -171,10 +177,13 @@
 - `click_and_wait`
   说明：先注册等待条件再点击，适合点击明确按钮、链接或标签后，会发生同页跳转、弹出新页、改标题、改 URL 或刷新局部内容的场景。优先传 `ref`。
   判定规则：默认要求命中“强信号”（例如 `waitForSelector` 命中、显式 URL/标题条件命中、popup/new_target）；仅有弱变化不会判成功，避免误判。默认不强等导航，只有明确会跳页时再传 `waitForNavigation=true`。
+  两阶段等待：如果是“路由先变化、内容区稍后才就绪”的页面，可额外传 `contentReadySelector` 或 `contentReadyText`。这时工具会先确认跳转/变化，再继续等待内容区真正可见。
   返回重点：
   - `changeType`：本次变化类型，例如 `same_page_update`、`navigation`、`popup`、`new_target`
   - `successSignal`：本次到底是靠什么信号判成功，例如 `selector`、`url`、`title`、`popup`
   - `domObservation`：仅在动作期间短时观察 DOM 变更后生成的摘要，包含是否变更、节点增删数量、文本/属性变化次数、命中最多的选择器摘要；不返回原始 mutation 明细
+  - `contentReady`：是否命中了内容就绪条件
+  - `contentReadySignal`：内容就绪靠什么命中，例如 `selector`、`text`
   常用参数：
   - `selector`
   - `waitForNavigation`
@@ -182,6 +191,10 @@
   - `waitForSelector`
   - `waitForTitle`
   - `waitForUrl`
+  - `contentReadySelector`
+  - `contentReadyText`
+  - `contentReadyTextSelector`
+  - `contentReadyTimeoutMs`
   - `matchMode`
 
 - `type_text`
@@ -194,6 +207,21 @@
 
 - `press_key`
   说明：发送一个键盘按键，例如 `Enter`、`Tab`、`Escape`。
+
+- `press_key_and_wait`
+  说明：发送一个键盘按键并等待页面变化，适合搜索框按 `Enter`、表单回车提交、键盘触发跳转这类场景。
+  常用参数：
+  - `key`
+  - `waitForNavigation`
+  - `waitUntil`
+  - `waitForSelector`
+  - `waitForTitle`
+  - `waitForUrl`
+  - `contentReadySelector`
+  - `contentReadyText`
+  - `contentReadyTextSelector`
+  - `contentReadyTimeoutMs`
+  - `matchMode`
 
 - `submit_input`
   说明：高级模式下的兜底工具。对指定输入框按多种策略尝试提交，适合页面没有明确提交按钮，或需要排查表单提交流程时做验证。
@@ -553,8 +581,8 @@ openclaw.cmd mcp unset chrome-browser
   "name": "click_and_wait",
   "arguments": {
     "selector": "#chat-submit-button",
-    "waitForNavigation": true,
-    "waitForTitle": "黄金价格",
+    "waitForUrl": "/search",
+    "contentReadySelector": "#search-results",
     "matchMode": "contains",
     "timeoutMs": 20000
   }

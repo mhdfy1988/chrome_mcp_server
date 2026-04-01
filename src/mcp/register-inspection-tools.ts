@@ -147,6 +147,56 @@ export function registerInspectionTools(
       ),
   );
 
+  server.registerTool(
+    "find_submit_targets",
+    {
+      description:
+        "围绕指定输入框扫描附近可能承担提交动作的控件，适合搜索框、筛选框或表单输入框场景。会额外返回 preferredSubmitMethod，用于判断当前更适合优先按 Enter，还是优先点击邻近提交控件。优先传 ref；也支持 selector。",
+      inputSchema: z
+        .object({
+          pageId: z.string().optional().describe("可选，指定页面 ID。"),
+          ref: z
+            .string()
+            .min(1)
+            .optional()
+            .describe("可选，来自 page_snapshot 或 find_elements 返回的输入框引用。"),
+          selector: z
+            .string()
+            .optional()
+            .describe("可选，输入框的 CSS 选择器。"),
+          maxResults: z
+            .number()
+            .int()
+            .positive()
+            .max(20)
+            .default(5)
+            .describe("最多返回多少个候选提交控件。"),
+        })
+        .superRefine((value, context) => {
+          if (!value.ref && !value.selector) {
+            context.addIssue({
+              code: "custom",
+              message: "ref 和 selector 至少要提供一个。",
+              path: ["ref"],
+            });
+          }
+        }),
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+      },
+    },
+    async ({ pageId, ref, selector, maxResults }) =>
+      textResult(
+        await browserManager.findSubmitTargets({
+          pageId,
+          ref,
+          selector,
+          maxResults,
+        }),
+      ),
+  );
+
   if (options.toolMode === "advanced") {
     server.registerTool(
       "find_primary_inputs",

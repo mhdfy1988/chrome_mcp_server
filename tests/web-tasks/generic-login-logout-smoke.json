@@ -1,0 +1,144 @@
+{
+  "taskName": "generic-login-logout-smoke",
+  "baseUrl": "<LOGIN_PAGE_URL>",
+  "goal": "验证登录成功、用户态可见、退出后返回登录页的基础链路。",
+  "preconditions": [
+    "必须使用测试账号",
+    "允许登录和登出",
+    "不允许修改业务数据"
+  ],
+  "forbiddenActions": [
+    "delete",
+    "restart",
+    "stop",
+    "shutdown",
+    "create_record",
+    "edit_record",
+    "submit_business_form"
+  ],
+  "defaults": {
+    "preferSnapshotFlow": true,
+    "allowDirectSelector": false,
+    "stepTimeoutMs": 5000,
+    "captureScreenshotOnEachCriticalStep": true,
+    "captureConsoleLogsOnFailure": true,
+    "captureNetworkLogsOnFailure": true
+  },
+  "credentials": {
+    "usernameFromEnv": "<TEST_USERNAME_ENV>",
+    "passwordFromEnv": "<TEST_PASSWORD_ENV>"
+  },
+  "steps": [
+    {
+      "id": "open-login-page",
+      "name": "打开登录页",
+      "action": "open_page",
+      "input": {
+        "url": "<LOGIN_PAGE_URL>"
+      },
+      "expect": {
+        "selectorVisible": "<USERNAME_INPUT_HINT_OR_SELECTOR>",
+        "changeType": "navigation"
+      },
+      "evidence": [
+        "screenshot",
+        "page_snapshot"
+      ]
+    },
+    {
+      "id": "fill-username",
+      "name": "输入用户名",
+      "action": "type_text",
+      "targetHint": "用户名输入框",
+      "input": {
+        "textFromCredential": "username"
+      },
+      "expect": {
+        "inputValueFromCredential": "username"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    },
+    {
+      "id": "fill-password",
+      "name": "输入密码",
+      "action": "type_text",
+      "targetHint": "密码输入框",
+      "input": {
+        "textFromCredential": "password"
+      },
+      "expect": {
+        "inputFilled": true
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    },
+    {
+      "id": "submit-login",
+      "name": "提交登录",
+      "action": "click_and_wait",
+      "targetHint": "登录按钮",
+      "expect": {
+        "selectorVisible": "<USER_MENU_HINT_OR_SELECTOR>",
+        "changeType": "navigation",
+        "successSignal": "selector"
+      },
+      "allowedBranches": [
+        {
+          "name": "同页局部登录成功",
+          "expect": {
+            "selectorVisible": "<USER_MENU_HINT_OR_SELECTOR>",
+            "changeType": "same_page_update",
+            "successSignal": "selector"
+          }
+        }
+      ],
+      "evidence": [
+        "screenshot",
+        "page_snapshot"
+      ]
+    },
+    {
+      "id": "logout",
+      "name": "执行登出",
+      "action": "click_and_wait",
+      "targetHint": "用户菜单里的退出登录",
+      "expect": {
+        "selectorVisible": "<USERNAME_INPUT_HINT_OR_SELECTOR>",
+        "changeType": "navigation",
+        "successSignal": "selector"
+      },
+      "allowedBranches": [
+        {
+          "name": "同页回到未登录态",
+          "expect": {
+            "selectorVisible": "<USERNAME_INPUT_HINT_OR_SELECTOR>",
+            "changeType": "same_page_update",
+            "successSignal": "selector"
+          }
+        }
+      ],
+      "evidence": [
+        "screenshot"
+      ]
+    }
+  ],
+  "reporting": {
+    "recordFields": [
+      "stepId",
+      "expected",
+      "actual",
+      "title",
+      "url",
+      "changeType",
+      "successSignal",
+      "pageSource",
+      "observed",
+      "domObservation",
+      "screenshotPath"
+    ],
+    "useTemplate": "docs/bug-report-template.md"
+  }
+}

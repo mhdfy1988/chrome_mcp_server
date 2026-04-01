@@ -1,0 +1,81 @@
+{
+  "taskName": "generic-new-tab-link-smoke",
+  "baseUrl": "<PAGE_WITH_EXTERNAL_LINK_URL>",
+  "goal": "验证点击帮助文档、详情页或外链后，是否按预期打开新页或新标签。",
+  "preconditions": [
+    "页面可正常访问",
+    "允许打开新标签页",
+    "点击不会产生业务写操作"
+  ],
+  "forbiddenActions": [
+    "delete",
+    "restart",
+    "stop",
+    "shutdown",
+    "submit_form",
+    "download_sensitive_file"
+  ],
+  "defaults": {
+    "preferSnapshotFlow": true,
+    "allowDirectSelector": false,
+    "stepTimeoutMs": 5000,
+    "captureScreenshotOnEachCriticalStep": true,
+    "captureConsoleLogsOnFailure": true,
+    "captureNetworkLogsOnFailure": true
+  },
+  "steps": [
+    {
+      "id": "open-page",
+      "name": "打开入口页面",
+      "action": "open_page",
+      "input": {
+        "url": "<PAGE_WITH_EXTERNAL_LINK_URL>"
+      },
+      "expect": {
+        "changeType": "navigation"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    },
+    {
+      "id": "click-external-link",
+      "name": "点击外链或帮助文档",
+      "action": "click_and_wait",
+      "targetHint": "帮助文档、详情页或外部链接",
+      "expect": {
+        "changeType": "popup",
+        "successSignal": "popup"
+      },
+      "allowedBranches": [
+        {
+          "name": "新 target 打开",
+          "expect": {
+            "changeType": "new_target",
+            "successSignal": "new_target"
+          }
+        }
+      ],
+      "evidence": [
+        "screenshot",
+        "page_snapshot"
+      ]
+    }
+  ],
+  "reporting": {
+    "recordFields": [
+      "stepId",
+      "expected",
+      "actual",
+      "title",
+      "url",
+      "changeType",
+      "successSignal",
+      "pageSource",
+      "observed",
+      "domObservation",
+      "screenshotPath"
+    ],
+    "useTemplate": "docs/bug-report-template.md"
+  }
+}

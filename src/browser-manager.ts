@@ -1,17 +1,18 @@
 ﻿import type { Page } from "puppeteer-core";
 import { screenshotWithRuntime } from "./browser/ops/artifact-tools.js";
 import {
-  assertFindPrimaryInputsAllowed,
   assertSubmitInputAllowed,
 } from "./browser/flow/fallback-guards.js";
 import type { BrowserInspectionDeps } from "./browser/core/inspection-deps.js";
 import { findElementsWithInspection } from "./browser/inspect/find-elements.js";
 import { findPrimaryInputsWithInspection } from "./browser/inspect/find-primary-inputs.js";
+import { findSubmitTargetsWithInspection } from "./browser/inspect/find-submit-targets.js";
 import { extractTextWithInspection, evaluateWithInspection } from "./browser/inspect/inspection-text.js";
 import {
   clickAndWaitWithRuntime,
   clickWithRuntime,
   pressKeyWithRuntime,
+  pressKeyAndWaitWithRuntime,
   submitInputWithRuntime,
   typeTextWithRuntime,
 } from "./browser/ops/interaction-tools.js";
@@ -32,10 +33,12 @@ import type {
   ConsoleLogEntry,
   FindElementsResult,
   FindPrimaryInputsResult,
+  FindSubmitTargetsResult,
   NavigateResult,
   NetworkLogEntry,
   PageSnapshotResult,
   PageSummary,
+  PressKeyAndWaitResult,
   ScreenshotResult,
   SubmitInputResult,
   WaitMatchMode,
@@ -121,6 +124,10 @@ export class BrowserManager {
     waitForSelector?: string;
     waitForTitle?: string;
     waitForUrl?: string;
+    contentReadySelector?: string;
+    contentReadyText?: string;
+    contentReadyTextSelector?: string;
+    contentReadyTimeoutMs?: number;
     matchMode?: WaitMatchMode;
   }): Promise<ClickAndWaitResult> {
     return clickAndWaitWithRuntime(this.getRuntimeDeps(), options);
@@ -140,6 +147,24 @@ export class BrowserManager {
 
   public async pressKey(key: string, pageId?: string): Promise<PageSummary> {
     return pressKeyWithRuntime(this.getRuntimeDeps(), key, pageId);
+  }
+
+  public async pressKeyAndWait(options: {
+    key: string;
+    pageId?: string;
+    timeoutMs?: number;
+    waitForNavigation?: boolean;
+    waitUntil?: WaitUntilMode;
+    waitForSelector?: string;
+    waitForTitle?: string;
+    waitForUrl?: string;
+    contentReadySelector?: string;
+    contentReadyText?: string;
+    contentReadyTextSelector?: string;
+    contentReadyTimeoutMs?: number;
+    matchMode?: WaitMatchMode;
+  }): Promise<PressKeyAndWaitResult> {
+    return pressKeyAndWaitWithRuntime(this.getRuntimeDeps(), options);
   }
 
   public async extractText(options: {
@@ -191,11 +216,31 @@ export class BrowserManager {
     pageId?: string;
     maxResults: number;
   }): Promise<FindPrimaryInputsResult> {
-    await assertFindPrimaryInputsAllowed(
-      this.getInspectionDeps(),
-      options.pageId,
-    );
     return findPrimaryInputsWithInspection(this.getInspectionDeps(), options);
+  }
+
+  public async findSubmitTargets(options: {
+    pageId?: string;
+    ref?: string;
+    selector?: string;
+    maxResults: number;
+  }): Promise<FindSubmitTargetsResult> {
+    const page = await this.session.resolvePage(options.pageId);
+    const pageId = this.session.requirePageId(page);
+    const selector =
+      options.ref
+        ? this.session.resolveSelectorForRef(pageId, options.ref)
+        : options.selector;
+
+    if (!selector) {
+      throw new Error("selector 和 ref 至少要提供一个。");
+    }
+
+    return findSubmitTargetsWithInspection(this.getInspectionDeps(), {
+      pageId,
+      selector,
+      maxResults: options.maxResults,
+    });
   }
 
   public async submitInput(options: {
@@ -266,6 +311,7 @@ export class BrowserManager {
   private getRuntimeDeps(): BrowserRuntimeDeps {
     return {
       config: this.session.config,
+      isManagedBrowser: () => this.session.isManagedBrowser(),
       ensureBrowser: (startIfNeeded) => this.session.ensureBrowser(startIfNeeded),
       syncPages: () => this.session.syncPages(),
       trackPage: (page) => this.session.trackPage(page),

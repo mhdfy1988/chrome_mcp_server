@@ -1,0 +1,109 @@
+{
+  "taskName": "wikipedia-search-smoke",
+  "baseUrl": "https://www.wikipedia.org/",
+  "goal": "验证公开百科网站首页搜索是否能进入目标词条页面，并记录导航结果。",
+  "preconditions": [
+    "不需要登录",
+    "允许访问公开互联网",
+    "允许页面跳转"
+  ],
+  "forbiddenActions": [
+    "edit",
+    "login",
+    "create_account",
+    "submit_form"
+  ],
+  "defaults": {
+    "preferSnapshotFlow": true,
+    "allowDirectSelector": false,
+    "stepTimeoutMs": 5000,
+    "captureScreenshotOnEachCriticalStep": true,
+    "captureConsoleLogsOnFailure": true,
+    "captureNetworkLogsOnFailure": true
+  },
+  "steps": [
+    {
+      "id": "open-home",
+      "name": "打开 Wikipedia 首页",
+      "action": "open_page",
+      "input": {
+        "url": "https://www.wikipedia.org/"
+      },
+      "expect": {
+        "titleContains": "Wikipedia",
+        "changeType": "navigation"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    },
+    {
+      "id": "locate-search",
+      "name": "定位搜索框",
+      "action": "find_elements",
+      "targetHint": "首页中央搜索框",
+      "expect": {
+        "atLeastOneElement": true
+      },
+      "evidence": [
+        "page_snapshot"
+      ]
+    },
+    {
+      "id": "type-keyword",
+      "name": "输入搜索词",
+      "action": "type_text",
+      "targetHint": "首页中央搜索框",
+      "input": {
+        "text": "Artificial intelligence"
+      },
+      "expect": {
+        "inputValueContains": "Artificial intelligence"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    },
+    {
+      "id": "submit-search",
+      "name": "提交搜索",
+      "action": "click_and_wait",
+      "targetHint": "搜索按钮",
+      "expect": {
+        "urlContains": "Artificial_intelligence",
+        "changeType": "navigation",
+        "successSignal": "url"
+      },
+      "allowedBranches": [
+        {
+          "name": "搜索结果页",
+          "expect": {
+            "urlContains": "search=",
+            "changeType": "navigation",
+            "successSignal": "url"
+          }
+        }
+      ],
+      "evidence": [
+        "screenshot",
+        "page_snapshot"
+      ]
+    }
+  ],
+  "reporting": {
+    "recordFields": [
+      "stepId",
+      "expected",
+      "actual",
+      "title",
+      "url",
+      "changeType",
+      "successSignal",
+      "pageSource",
+      "observed",
+      "domObservation",
+      "screenshotPath"
+    ],
+    "useTemplate": "docs/bug-report-template.md"
+  }
+}

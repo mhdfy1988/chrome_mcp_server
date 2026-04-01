@@ -1,0 +1,78 @@
+{
+  "taskName": "wikipedia-table-extract-report",
+  "baseUrl": "https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)",
+  "goal": "验证表格型页面的数据提取，并把前几行汇总成 Markdown 报告。",
+  "preconditions": [
+    "不需要登录",
+    "允许访问公开互联网",
+    "允许直接访问表格页"
+  ],
+  "forbiddenActions": [
+    "login",
+    "logout",
+    "edit"
+  ],
+  "defaults": {
+    "preferSnapshotFlow": true,
+    "allowDirectSelector": true,
+    "stepTimeoutMs": 7000,
+    "captureScreenshotOnEachCriticalStep": true,
+    "captureConsoleLogsOnFailure": true,
+    "captureNetworkLogsOnFailure": true
+  },
+  "steps": [
+    {
+      "id": "open-table-page",
+      "name": "打开人口表格页",
+      "action": "open_page",
+      "input": {
+        "url": "https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)"
+      },
+      "expect": {
+        "titleContains": "population",
+        "changeType": "navigation"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    },
+    {
+      "id": "extract-table",
+      "name": "提取前 5 行表格数据",
+      "action": "extract_text",
+      "targetHint": "主表格区域",
+      "expect": {
+        "textContains": "World"
+      },
+      "evidence": [
+        "page_snapshot"
+      ]
+    }
+  ],
+  "reporting": {
+    "recordFields": [
+      "stepId",
+      "expected",
+      "actual",
+      "title",
+      "url",
+      "changeType",
+      "successSignal",
+      "pageSource",
+      "observed",
+      "domObservation",
+      "screenshotPath"
+    ],
+    "useTemplate": "docs/bug-report-template.md"
+  },
+  "output": {
+    "kind": "markdown_table",
+    "path": ".tmp/reports/wikipedia-population-top5.md",
+    "columns": [
+      "排名",
+      "国家或地区",
+      "人口"
+    ],
+    "limit": 5
+  }
+}

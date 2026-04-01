@@ -1,0 +1,89 @@
+{
+  "taskName": "github-repo-navigation-smoke",
+  "baseUrl": "https://github.com/openai/openai-cookbook",
+  "goal": "验证公开 GitHub 仓库页面内标签导航是否正常，并记录跳转结果。",
+  "preconditions": [
+    "不需要登录",
+    "允许访问公开互联网",
+    "不需要写操作"
+  ],
+  "forbiddenActions": [
+    "star",
+    "fork",
+    "watch",
+    "login",
+    "create_issue",
+    "create_pull_request"
+  ],
+  "defaults": {
+    "preferSnapshotFlow": true,
+    "allowDirectSelector": false,
+    "stepTimeoutMs": 5000,
+    "captureScreenshotOnEachCriticalStep": true,
+    "captureConsoleLogsOnFailure": true,
+    "captureNetworkLogsOnFailure": true
+  },
+  "steps": [
+    {
+      "id": "open-repo",
+      "name": "打开仓库首页",
+      "action": "open_page",
+      "input": {
+        "url": "https://github.com/openai/openai-cookbook"
+      },
+      "expect": {
+        "titleContains": "openai-cookbook",
+        "urlContains": "/openai/openai-cookbook",
+        "changeType": "navigation"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    },
+    {
+      "id": "open-issues-tab",
+      "name": "切换到 Issues 标签",
+      "action": "click_and_wait",
+      "targetHint": "仓库顶部导航里的 Issues 标签",
+      "expect": {
+        "urlContains": "/issues",
+        "changeType": "navigation",
+        "successSignal": "url"
+      },
+      "evidence": [
+        "screenshot",
+        "page_snapshot"
+      ]
+    },
+    {
+      "id": "open-pulls-tab",
+      "name": "切换到 Pull requests 标签",
+      "action": "click_and_wait",
+      "targetHint": "仓库顶部导航里的 Pull requests 标签",
+      "expect": {
+        "urlContains": "/pulls",
+        "changeType": "navigation",
+        "successSignal": "url"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    }
+  ],
+  "reporting": {
+    "recordFields": [
+      "stepId",
+      "expected",
+      "actual",
+      "title",
+      "url",
+      "changeType",
+      "successSignal",
+      "pageSource",
+      "observed",
+      "domObservation",
+      "screenshotPath"
+    ],
+    "useTemplate": "docs/bug-report-template.md"
+  }
+}

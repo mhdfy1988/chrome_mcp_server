@@ -4,6 +4,7 @@ import type { BrowserRuntimeDeps } from "../core/runtime-deps.js";
 import type {
   ClickAndWaitResult,
   PageSummary,
+  PressKeyAndWaitResult,
   WaitMatchMode,
 } from "../core/types.js";
 import {
@@ -58,6 +59,10 @@ export async function clickAndWaitWithRuntime(
     waitForSelector?: string;
     waitForTitle?: string;
     waitForUrl?: string;
+    contentReadySelector?: string;
+    contentReadyText?: string;
+    contentReadyTextSelector?: string;
+    contentReadyTimeoutMs?: number;
     matchMode?: WaitMatchMode;
   },
 ): Promise<ClickAndWaitResult> {
@@ -88,6 +93,22 @@ export async function clickAndWaitWithRuntime(
     });
   }
 
+  if (options.contentReadySelector) {
+    verifications.push({
+      kind: "contentSelectorVisible",
+      selector: options.contentReadySelector,
+    });
+  }
+
+  if (options.contentReadyText) {
+    verifications.push({
+      kind: "contentText",
+      text: options.contentReadyText,
+      textSelector: options.contentReadyTextSelector,
+      matchMode: options.matchMode,
+    });
+  }
+
   const observation = await runActionWithVerification(
     deps,
     page,
@@ -104,6 +125,10 @@ export async function clickAndWaitWithRuntime(
       waitForSelector: options.waitForSelector,
       waitForTitle: options.waitForTitle,
       waitForUrl: options.waitForUrl,
+      contentReadySelector: options.contentReadySelector,
+      contentReadyText: options.contentReadyText,
+      contentReadyTextSelector: options.contentReadyTextSelector,
+      contentReadyTimeoutMs: options.contentReadyTimeoutMs,
       matchMode: options.matchMode,
       observeDom: true,
       requireObservedChange: true,
@@ -126,6 +151,10 @@ export async function clickAndWaitWithRuntime(
       waitForSelector: options.waitForSelector,
       waitForTitle: options.waitForTitle,
       waitForUrl: options.waitForUrl,
+      contentReadySelector: options.contentReadySelector,
+      contentReadyText: options.contentReadyText,
+      contentReadyTextSelector: options.contentReadyTextSelector,
+      contentReadyTimeoutMs: options.contentReadyTimeoutMs,
       matchMode: options.matchMode,
       timeoutMs: options.timeoutMs,
     }),
@@ -133,6 +162,8 @@ export async function clickAndWaitWithRuntime(
     after: observation.after,
     changed: observation.changed,
     observed: observation.observed,
+    contentReady: observation.contentReady,
+    contentReadySignal: observation.contentReadySignal,
     domObservation: observation.domObservation,
     note:
       observation.attempts > 1
@@ -204,6 +235,127 @@ export async function pressKeyWithRuntime(
   const resolvedPageId = deps.requirePageId(page);
   await page.keyboard.press(key as KeyInput);
   return deps.summarizePage(resolvedPageId, page);
+}
+
+export async function pressKeyAndWaitWithRuntime(
+  deps: BrowserRuntimeDeps,
+  options: {
+    key: string;
+    pageId?: string;
+    timeoutMs?: number;
+    waitForNavigation?: boolean;
+    waitUntil?: WaitUntilMode;
+    waitForSelector?: string;
+    waitForTitle?: string;
+    waitForUrl?: string;
+    contentReadySelector?: string;
+    contentReadyText?: string;
+    contentReadyTextSelector?: string;
+    contentReadyTimeoutMs?: number;
+    matchMode?: WaitMatchMode;
+  },
+): Promise<PressKeyAndWaitResult> {
+  const page = await deps.resolvePage(options.pageId);
+  const shouldWaitForNavigation = options.waitForNavigation ?? false;
+  const verifications: ActionVerificationRule[] = [];
+
+  if (options.waitForUrl) {
+    verifications.push({
+      kind: "url",
+      expected: options.waitForUrl,
+      matchMode: options.matchMode,
+    });
+  }
+
+  if (options.waitForTitle) {
+    verifications.push({
+      kind: "title",
+      expected: options.waitForTitle,
+      matchMode: options.matchMode,
+    });
+  }
+
+  if (options.waitForSelector) {
+    verifications.push({
+      kind: "selectorVisible",
+      selector: options.waitForSelector,
+    });
+  }
+
+  if (options.contentReadySelector) {
+    verifications.push({
+      kind: "contentSelectorVisible",
+      selector: options.contentReadySelector,
+    });
+  }
+
+  if (options.contentReadyText) {
+    verifications.push({
+      kind: "contentText",
+      text: options.contentReadyText,
+      textSelector: options.contentReadyTextSelector,
+      matchMode: options.matchMode,
+    });
+  }
+
+  const observation = await runActionWithVerification(
+    deps,
+    page,
+    async (currentPage) => {
+      await currentPage.keyboard.press(options.key as KeyInput);
+    },
+    {
+      timeoutMs: options.timeoutMs,
+      waitForNavigation: shouldWaitForNavigation,
+      waitUntil: options.waitUntil,
+      waitForSelector: options.waitForSelector,
+      waitForTitle: options.waitForTitle,
+      waitForUrl: options.waitForUrl,
+      contentReadySelector: options.contentReadySelector,
+      contentReadyText: options.contentReadyText,
+      contentReadyTextSelector: options.contentReadyTextSelector,
+      contentReadyTimeoutMs: options.contentReadyTimeoutMs,
+      matchMode: options.matchMode,
+      observeDom: true,
+      requireObservedChange: true,
+      requireStrongObservedChange: true,
+      verifications,
+    },
+  );
+
+  return {
+    page: await deps.summarizePage(
+      deps.requirePageId(observation.finalPage),
+      observation.finalPage,
+    ),
+    key: options.key,
+    pageSource: observation.pageSource,
+    changeType: determineActionChangeType(observation),
+    successSignal: determineActionSuccessSignal(observation, {
+      waitForNavigation: shouldWaitForNavigation,
+      waitUntil: options.waitUntil,
+      waitForSelector: options.waitForSelector,
+      waitForTitle: options.waitForTitle,
+      waitForUrl: options.waitForUrl,
+      contentReadySelector: options.contentReadySelector,
+      contentReadyText: options.contentReadyText,
+      contentReadyTextSelector: options.contentReadyTextSelector,
+      contentReadyTimeoutMs: options.contentReadyTimeoutMs,
+      matchMode: options.matchMode,
+      timeoutMs: options.timeoutMs,
+    }),
+    before: observation.before,
+    after: observation.after,
+    changed: observation.changed,
+    observed: observation.observed,
+    contentReady: observation.contentReady,
+    contentReadySignal: observation.contentReadySignal,
+    domObservation: observation.domObservation,
+    note:
+      observation.attempts > 1
+        ? `已重试 ${observation.attempts} 次。`
+        : observation.note,
+  };
 }
 
 async function resolveActionTarget(

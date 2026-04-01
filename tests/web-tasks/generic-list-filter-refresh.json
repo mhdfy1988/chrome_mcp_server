@@ -1,0 +1,97 @@
+{
+  "taskName": "generic-list-filter-refresh",
+  "baseUrl": "<LIST_PAGE_URL>",
+  "goal": "验证列表页切换筛选条件后，结果区是否在同页正确刷新。",
+  "preconditions": [
+    "页面已可访问",
+    "筛选不会产生真实业务写操作",
+    "允许同页局部刷新"
+  ],
+  "forbiddenActions": [
+    "delete",
+    "restart",
+    "stop",
+    "shutdown",
+    "batch_action",
+    "export_sensitive_data"
+  ],
+  "defaults": {
+    "preferSnapshotFlow": true,
+    "allowDirectSelector": false,
+    "stepTimeoutMs": 5000,
+    "captureScreenshotOnEachCriticalStep": true,
+    "captureConsoleLogsOnFailure": true,
+    "captureNetworkLogsOnFailure": true
+  },
+  "steps": [
+    {
+      "id": "open-list-page",
+      "name": "打开列表页",
+      "action": "open_page",
+      "input": {
+        "url": "<LIST_PAGE_URL>"
+      },
+      "expect": {
+        "selectorVisible": "<LIST_CONTAINER_HINT_OR_SELECTOR>",
+        "changeType": "navigation"
+      },
+      "evidence": [
+        "screenshot",
+        "page_snapshot"
+      ]
+    },
+    {
+      "id": "switch-filter",
+      "name": "切换筛选条件",
+      "action": "click_and_wait",
+      "targetHint": "筛选栏中的目标选项",
+      "expect": {
+        "changeType": "same_page_update",
+        "successSignal": "selector",
+        "selectorVisible": "<FILTERED_LIST_CONTAINER_HINT_OR_SELECTOR>"
+      },
+      "allowedBranches": [
+        {
+          "name": "依靠 DOM 摘要确认刷新",
+          "expect": {
+            "changeType": "same_page_update",
+            "successSignal": "dom",
+            "domChanged": true
+          }
+        }
+      ],
+      "evidence": [
+        "screenshot",
+        "page_snapshot",
+        "console_logs"
+      ]
+    },
+    {
+      "id": "verify-list-state",
+      "name": "验证列表状态",
+      "action": "wait_for",
+      "expect": {
+        "selectorVisible": "<FILTERED_LIST_CONTAINER_HINT_OR_SELECTOR>"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    }
+  ],
+  "reporting": {
+    "recordFields": [
+      "stepId",
+      "expected",
+      "actual",
+      "title",
+      "url",
+      "changeType",
+      "successSignal",
+      "pageSource",
+      "observed",
+      "domObservation",
+      "screenshotPath"
+    ],
+    "useTemplate": "docs/bug-report-template.md"
+  }
+}

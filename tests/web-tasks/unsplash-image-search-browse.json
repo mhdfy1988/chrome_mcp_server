@@ -1,0 +1,141 @@
+{
+  "taskName": "unsplash-image-search-browse",
+  "baseUrl": "https://unsplash.com/",
+  "goal": "验证图片站首页搜索、结果页浏览和图片详情页打开流程。",
+  "preconditions": [
+    "不需要登录",
+    "允许访问公开互联网",
+    "不执行下载、点赞、收藏动作"
+  ],
+  "forbiddenActions": [
+    "login",
+    "logout",
+    "like",
+    "follow",
+    "download"
+  ],
+  "defaults": {
+    "preferSnapshotFlow": true,
+    "allowDirectSelector": false,
+    "stepTimeoutMs": 7000,
+    "captureScreenshotOnEachCriticalStep": true,
+    "captureConsoleLogsOnFailure": true,
+    "captureNetworkLogsOnFailure": true
+  },
+  "steps": [
+    {
+      "id": "open-home",
+      "name": "打开 Unsplash 首页",
+      "action": "open_page",
+      "input": {
+        "url": "https://unsplash.com/"
+      },
+      "expect": {
+        "titleContains": "Unsplash",
+        "changeType": "navigation"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    },
+    {
+      "id": "locate-search",
+      "name": "定位首页搜索框",
+      "action": "find_elements",
+      "targetHint": "页面顶部搜索框",
+      "expect": {
+        "atLeastOneElement": true
+      },
+      "evidence": [
+        "page_snapshot"
+      ]
+    },
+    {
+      "id": "type-keyword",
+      "name": "输入图片关键词",
+      "action": "type_text",
+      "targetHint": "页面顶部搜索框",
+      "input": {
+        "text": "waterfall"
+      },
+      "expect": {
+        "inputValueContains": "waterfall"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    },
+    {
+      "id": "submit-search",
+      "name": "提交图片搜索",
+      "action": "click_and_wait",
+      "targetHint": "搜索按钮或搜索提交控件",
+      "expect": {
+        "urlContains": "search",
+        "changeType": "navigation",
+        "successSignal": "url"
+      },
+      "allowedBranches": [
+        {
+          "name": "同页结果网格",
+          "expect": {
+            "changeType": "same_page_update",
+            "successSignal": "selector",
+            "selectorVisible": "img"
+          }
+        }
+      ],
+      "evidence": [
+        "screenshot",
+        "page_snapshot"
+      ]
+    },
+    {
+      "id": "open-first-image",
+      "name": "打开第一张图片详情",
+      "action": "click_and_wait",
+      "targetHint": "搜索结果区第一张图片或第一张图片卡片",
+      "expect": {
+        "changeType": "navigation",
+        "successSignal": "url",
+        "urlContains": "/photos/"
+      },
+      "allowedBranches": [
+        {
+          "name": "新页图片详情",
+          "expect": {
+            "changeType": "popup",
+            "successSignal": "popup"
+          }
+        },
+        {
+          "name": "新 target 图片详情",
+          "expect": {
+            "changeType": "new_target",
+            "successSignal": "new_target"
+          }
+        }
+      ],
+      "evidence": [
+        "screenshot",
+        "page_snapshot"
+      ]
+    }
+  ],
+  "reporting": {
+    "recordFields": [
+      "stepId",
+      "expected",
+      "actual",
+      "title",
+      "url",
+      "changeType",
+      "successSignal",
+      "pageSource",
+      "observed",
+      "domObservation",
+      "screenshotPath"
+    ],
+    "useTemplate": "docs/bug-report-template.md"
+  }
+}

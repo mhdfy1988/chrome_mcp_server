@@ -103,6 +103,25 @@ export function registerInteractionTools(
             .string()
             .optional()
             .describe("可选，点击后等待 URL 满足条件。"),
+          contentReadySelector: z
+            .string()
+            .optional()
+            .describe("可选，路由或页面变化后，再等待某个内容选择器出现，适合 URL 先变、结果内容后到的场景。"),
+          contentReadyText: z
+            .string()
+            .optional()
+            .describe("可选，路由或页面变化后，再等待某段内容文本出现。"),
+          contentReadyTextSelector: z
+            .string()
+            .optional()
+            .describe("可选，仅在某个元素范围内等待 contentReadyText。"),
+          contentReadyTimeoutMs: z
+            .number()
+            .int()
+            .positive()
+            .max(120000)
+            .optional()
+            .describe("可选，内容就绪阶段的单独超时时间；不传时默认跟随 timeoutMs。"),
           matchMode: waitMatchModeSchema
             .default("contains")
             .describe("标题和 URL 的匹配方式，支持 contains 或 exact。"),
@@ -127,6 +146,10 @@ export function registerInteractionTools(
       waitForSelector,
       waitForTitle,
       waitForUrl,
+      contentReadySelector,
+      contentReadyText,
+      contentReadyTextSelector,
+      contentReadyTimeoutMs,
       matchMode,
     }) =>
       textResult(
@@ -140,6 +163,10 @@ export function registerInteractionTools(
           waitForSelector,
           waitForTitle,
           waitForUrl,
+          contentReadySelector,
+          contentReadyText,
+          contentReadyTextSelector,
+          contentReadyTimeoutMs,
           matchMode,
         }),
       ),
@@ -215,6 +242,98 @@ export function registerInteractionTools(
     },
     async ({ pageId, key }) =>
       textResult(await browserManager.pressKey(key, pageId)),
+  );
+
+  server.registerTool(
+    "press_key_and_wait",
+    {
+      description:
+        "向当前页面发送一个键盘按键，并在发送前注册等待条件。适合搜索框按 Enter、表单回车提交、键盘触发跳转这类场景。",
+      inputSchema: z.object({
+        pageId: z.string().optional().describe("可选，指定页面 ID。"),
+        key: z.string().min(1).describe("按键名称，例如 Enter。"),
+        timeoutMs: z
+          .number()
+          .int()
+          .positive()
+          .max(120000)
+          .optional()
+          .describe("等待和按键共用的超时时间。"),
+        waitForNavigation: z
+          .boolean()
+          .optional()
+          .describe("可选，是否强制在发送按键前先注册导航等待；默认按成功信号判断。"),
+        waitUntil: waitUntilSchema
+          .default("domcontentloaded")
+          .describe("导航等待条件。"),
+        waitForSelector: z
+          .string()
+          .optional()
+          .describe("可选，按键后等待某个选择器出现。"),
+        waitForTitle: z
+          .string()
+          .optional()
+          .describe("可选，按键后等待标题满足条件。"),
+        waitForUrl: z
+          .string()
+          .optional()
+          .describe("可选，按键后等待 URL 满足条件。"),
+        contentReadySelector: z
+          .string()
+          .optional()
+          .describe("可选，路由或页面变化后，再等待某个内容选择器出现。"),
+        contentReadyText: z
+          .string()
+          .optional()
+          .describe("可选，路由或页面变化后，再等待某段内容文本出现。"),
+        contentReadyTextSelector: z
+          .string()
+          .optional()
+          .describe("可选，仅在某个元素范围内等待 contentReadyText。"),
+        contentReadyTimeoutMs: z
+          .number()
+          .int()
+          .positive()
+          .max(120000)
+          .optional()
+          .describe("可选，内容就绪阶段的单独超时时间；不传时默认跟随 timeoutMs。"),
+        matchMode: waitMatchModeSchema
+          .default("contains")
+          .describe("标题和 URL 的匹配方式，支持 contains 或 exact。"),
+      }),
+    },
+    async ({
+      pageId,
+      key,
+      timeoutMs,
+      waitForNavigation,
+      waitUntil,
+      waitForSelector,
+      waitForTitle,
+      waitForUrl,
+      contentReadySelector,
+      contentReadyText,
+      contentReadyTextSelector,
+      contentReadyTimeoutMs,
+      matchMode,
+    }) =>
+      textResult(
+        await browserManager.pressKeyAndWait({
+          pageId,
+          key,
+          timeoutMs,
+          waitForNavigation,
+          waitUntil: waitUntil as WaitUntilMode,
+          waitForSelector,
+          waitForTitle,
+          waitForUrl,
+          contentReadySelector,
+          contentReadyText,
+          contentReadyTextSelector,
+          contentReadyTimeoutMs,
+          matchMode,
+        }),
+      ),
   );
 
   if (options.toolMode === "advanced") {

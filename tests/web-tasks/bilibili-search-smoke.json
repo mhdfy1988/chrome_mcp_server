@@ -1,0 +1,117 @@
+{
+  "taskName": "bilibili-search-smoke",
+  "baseUrl": "https://www.bilibili.com/",
+  "goal": "验证真实内容站点首页搜索是否能进入搜索结果，并兼容同页/新页两种结果形态。",
+  "preconditions": [
+    "不需要登录",
+    "允许访问公开互联网",
+    "允许跳转到站内结果页"
+  ],
+  "forbiddenActions": [
+    "login",
+    "logout",
+    "like",
+    "follow",
+    "coin",
+    "submit_comment"
+  ],
+  "defaults": {
+    "preferSnapshotFlow": true,
+    "allowDirectSelector": false,
+    "stepTimeoutMs": 6000,
+    "captureScreenshotOnEachCriticalStep": true,
+    "captureConsoleLogsOnFailure": true,
+    "captureNetworkLogsOnFailure": true
+  },
+  "steps": [
+    {
+      "id": "open-home",
+      "name": "打开 B 站首页",
+      "action": "open_page",
+      "input": {
+        "url": "https://www.bilibili.com/"
+      },
+      "expect": {
+        "titleContains": "哔哩哔哩",
+        "changeType": "navigation"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    },
+    {
+      "id": "locate-search",
+      "name": "定位首页搜索框",
+      "action": "find_elements",
+      "targetHint": "顶部搜索框",
+      "expect": {
+        "atLeastOneElement": true
+      },
+      "evidence": [
+        "page_snapshot"
+      ]
+    },
+    {
+      "id": "type-keyword",
+      "name": "输入关键词",
+      "action": "type_text",
+      "targetHint": "顶部搜索框",
+      "input": {
+        "text": "python"
+      },
+      "expect": {
+        "inputValueContains": "python"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    },
+    {
+      "id": "submit-search",
+      "name": "提交搜索",
+      "action": "click_and_wait",
+      "targetHint": "搜索按钮",
+      "expect": {
+        "changeType": "navigation",
+        "successSignal": "url",
+        "urlContains": "search"
+      },
+      "allowedBranches": [
+        {
+          "name": "新标签结果页",
+          "expect": {
+            "changeType": "popup",
+            "successSignal": "popup"
+          }
+        },
+        {
+          "name": "新 target 结果页",
+          "expect": {
+            "changeType": "new_target",
+            "successSignal": "new_target"
+          }
+        }
+      ],
+      "evidence": [
+        "screenshot",
+        "page_snapshot"
+      ]
+    }
+  ],
+  "reporting": {
+    "recordFields": [
+      "stepId",
+      "expected",
+      "actual",
+      "title",
+      "url",
+      "changeType",
+      "successSignal",
+      "pageSource",
+      "observed",
+      "domObservation",
+      "screenshotPath"
+    ],
+    "useTemplate": "docs/bug-report-template.md"
+  }
+}

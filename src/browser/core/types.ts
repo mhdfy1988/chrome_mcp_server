@@ -62,6 +62,9 @@ export interface SnapshotElementSummary {
   accessibleName?: string;
   label?: string;
   placeholder?: string;
+  title?: string;
+  name?: string;
+  className?: string;
   selector: string;
   href?: string;
   disabled: boolean;
@@ -136,6 +139,33 @@ export interface FindPrimaryInputsResult {
   candidates: PrimaryInputCandidate[];
 }
 
+export interface SubmitTargetCandidate {
+  tag: string;
+  role?: string;
+  type?: string;
+  intent: "submit" | "clear" | "auxiliary";
+  selector: string;
+  text?: string;
+  accessibleName?: string;
+  title?: string;
+  className?: string;
+  score: number;
+  intentReasons: string[];
+  scoreBreakdown: Array<{
+    reason: string;
+    score: number;
+  }>;
+}
+
+export interface FindSubmitTargetsResult {
+  page: PageSummary;
+  inputSelector: string;
+  preferredSubmitMethod: "enter" | "click" | "either";
+  submitMethodReasons: string[];
+  total: number;
+  candidates: SubmitTargetCandidate[];
+}
+
 export interface SubmitInputResult {
   page: PageSummary;
   selector: string;
@@ -170,6 +200,8 @@ export type ClickAndWaitChangeType =
   | "none";
 
 export type ClickAndWaitSuccessSignal =
+  | "content_selector"
+  | "content_text"
   | "selector"
   | "url"
   | "title"
@@ -180,6 +212,8 @@ export type ClickAndWaitSuccessSignal =
   | "page_count_changed"
   | "state_changed"
   | "none";
+
+export type ContentReadySignal = "selector" | "text" | "none";
 
 export interface ClickAndWaitResult {
   page: PageSummary;
@@ -201,12 +235,50 @@ export interface ClickAndWaitResult {
     selector: boolean;
     title: boolean;
     url: boolean;
+    contentSelector: boolean;
+    contentText: boolean;
     dom: boolean;
     stateChanged: boolean;
     popup: boolean;
     target: boolean;
     pageCountChanged: boolean;
   };
+  contentReady: boolean;
+  contentReadySignal: ContentReadySignal;
+  domObservation: DomObservationSummary;
+  note?: string;
+}
+
+export interface PressKeyAndWaitResult {
+  page: PageSummary;
+  key: string;
+  pageSource: "current" | "popup" | "new_target";
+  changeType: ClickAndWaitChangeType;
+  successSignal: ClickAndWaitSuccessSignal;
+  before: {
+    title: string;
+    url: string;
+  };
+  after: {
+    title: string;
+    url: string;
+  };
+  changed: boolean;
+  observed: {
+    navigation: boolean;
+    selector: boolean;
+    title: boolean;
+    url: boolean;
+    contentSelector: boolean;
+    contentText: boolean;
+    dom: boolean;
+    stateChanged: boolean;
+    popup: boolean;
+    target: boolean;
+    pageCountChanged: boolean;
+  };
+  contentReady: boolean;
+  contentReadySignal: ContentReadySignal;
   domObservation: DomObservationSummary;
   note?: string;
 }

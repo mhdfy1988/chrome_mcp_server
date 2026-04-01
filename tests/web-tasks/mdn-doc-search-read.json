@@ -1,0 +1,146 @@
+{
+  "taskName": "mdn-doc-search-read",
+  "baseUrl": "https://developer.mozilla.org/zh-CN/",
+  "goal": "验证文档站的搜索、文章打开和正文提取流程。",
+  "preconditions": [
+    "不需要登录",
+    "允许访问公开互联网",
+    "不执行登录、反馈、订阅动作"
+  ],
+  "forbiddenActions": [
+    "login",
+    "logout",
+    "subscribe",
+    "submit_feedback"
+  ],
+  "defaults": {
+    "preferSnapshotFlow": true,
+    "allowDirectSelector": false,
+    "stepTimeoutMs": 8000,
+    "captureScreenshotOnEachCriticalStep": true,
+    "captureConsoleLogsOnFailure": true,
+    "captureNetworkLogsOnFailure": true
+  },
+  "steps": [
+    {
+      "id": "open-home",
+      "name": "打开 MDN 首页",
+      "action": "open_page",
+      "input": {
+        "url": "https://developer.mozilla.org/zh-CN/"
+      },
+      "expect": {
+        "titleContains": "MDN",
+        "changeType": "navigation"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    },
+    {
+      "id": "locate-search",
+      "name": "定位文档搜索框",
+      "action": "find_elements",
+      "targetHint": "页面搜索框",
+      "expect": {
+        "atLeastOneElement": true
+      },
+      "evidence": [
+        "page_snapshot"
+      ]
+    },
+    {
+      "id": "type-keyword",
+      "name": "输入文档关键词",
+      "action": "type_text",
+      "targetHint": "页面搜索框",
+      "input": {
+        "text": "fetch api"
+      },
+      "expect": {
+        "inputValueContains": "fetch api"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    },
+    {
+      "id": "submit-search",
+      "name": "提交文档搜索",
+      "action": "click_and_wait",
+      "targetHint": "搜索提交控件",
+      "expect": {
+        "changeType": "navigation",
+        "successSignal": "url",
+        "urlContains": "search"
+      },
+      "allowedBranches": [
+        {
+          "name": "直接进入文章页",
+          "expect": {
+            "changeType": "navigation",
+            "successSignal": "url",
+            "urlContains": "/docs/"
+          }
+        }
+      ],
+      "evidence": [
+        "screenshot",
+        "page_snapshot"
+      ]
+    },
+    {
+      "id": "open-first-article",
+      "name": "打开第一篇文档",
+      "action": "click_and_wait",
+      "targetHint": "搜索结果第一篇文档标题",
+      "expect": {
+        "changeType": "navigation",
+        "successSignal": "url",
+        "urlContains": "/docs/"
+      },
+      "evidence": [
+        "screenshot",
+        "page_snapshot"
+      ]
+    },
+    {
+      "id": "extract-article",
+      "name": "提取文档正文",
+      "action": "extract_text",
+      "targetHint": "主文档正文区域",
+      "expect": {
+        "textContains": "fetch"
+      },
+      "evidence": [
+        "page_snapshot"
+      ]
+    }
+  ],
+  "reporting": {
+    "recordFields": [
+      "stepId",
+      "expected",
+      "actual",
+      "title",
+      "url",
+      "changeType",
+      "successSignal",
+      "pageSource",
+      "observed",
+      "domObservation",
+      "screenshotPath"
+    ],
+    "useTemplate": "docs/bug-report-template.md"
+  },
+  "output": {
+    "kind": "markdown_summary",
+    "path": ".tmp/reports/mdn-fetch-api-summary.md",
+    "sections": [
+      "标题",
+      "URL",
+      "主要小节",
+      "正文摘录"
+    ]
+  }
+}

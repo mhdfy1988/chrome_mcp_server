@@ -11,11 +11,7 @@ export async function openPageWithRuntime(
     throw new Error("浏览器没有成功启动。");
   }
 
-  const page = await browser.newPage();
-  const pageId = deps.trackPage(page);
-
-  deps.applyTimeouts(page);
-  await deps.instrumentPage(pageId, page);
+  const { page, pageId } = await resolveOpenPageTarget(deps, browser);
 
   if (url) {
     await page.goto(url, { waitUntil: "domcontentloaded" });
@@ -25,6 +21,38 @@ export async function openPageWithRuntime(
   deps.setCurrentPageId(pageId);
 
   return deps.summarizePage(pageId, page);
+}
+
+async function resolveOpenPageTarget(
+  deps: BrowserRuntimeDeps,
+  browser: NonNullable<Awaited<ReturnType<BrowserRuntimeDeps["ensureBrowser"]>>>,
+): Promise<{
+  page: Awaited<ReturnType<BrowserRuntimeDeps["resolvePage"]>>;
+  pageId: string;
+}> {
+  await deps.syncPages();
+
+  if (deps.isManagedBrowser()) {
+    const trackedPages = Array.from(deps.getPages().entries());
+    if (trackedPages.length === 1) {
+      const [existingPageId, existingPage] = trackedPages[0];
+      const existingTitle = (await existingPage.title().catch(() => "")).trim();
+      if (existingPage.url() === "about:blank" && !existingTitle) {
+        deps.applyTimeouts(existingPage);
+        await deps.instrumentPage(existingPageId, existingPage);
+        return {
+          page: existingPage,
+          pageId: existingPageId,
+        };
+      }
+    }
+  }
+
+  const page = await browser.newPage();
+  const pageId = deps.trackPage(page);
+  deps.applyTimeouts(page);
+  await deps.instrumentPage(pageId, page);
+  return { page, pageId };
 }
 
 export async function selectPageWithRuntime(

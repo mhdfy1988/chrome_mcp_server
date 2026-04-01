@@ -29,6 +29,10 @@ export class BrowserSession {
 
   public constructor(public readonly config: ChromeConfig) {}
 
+  public isManagedBrowser(): boolean {
+    return this.launchedByManager;
+  }
+
   public async getStatus(): Promise<BrowserStatus> {
     const pages = await this.listPages(false);
 

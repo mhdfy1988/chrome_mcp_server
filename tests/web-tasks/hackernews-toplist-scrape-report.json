@@ -1,0 +1,81 @@
+{
+  "taskName": "hackernews-toplist-scrape-report",
+  "baseUrl": "https://news.ycombinator.com/",
+  "goal": "验证榜单型页面的数据抓取，并将前 10 条结果汇总为 Markdown 文档。",
+  "preconditions": [
+    "不需要登录",
+    "允许访问公开互联网",
+    "不执行投票、登录、评论动作"
+  ],
+  "forbiddenActions": [
+    "login",
+    "logout",
+    "vote",
+    "submit_comment"
+  ],
+  "defaults": {
+    "preferSnapshotFlow": true,
+    "allowDirectSelector": true,
+    "stepTimeoutMs": 6000,
+    "captureScreenshotOnEachCriticalStep": true,
+    "captureConsoleLogsOnFailure": true,
+    "captureNetworkLogsOnFailure": true
+  },
+  "steps": [
+    {
+      "id": "open-home",
+      "name": "打开 Hacker News 首页",
+      "action": "open_page",
+      "input": {
+        "url": "https://news.ycombinator.com/"
+      },
+      "expect": {
+        "titleContains": "Hacker News",
+        "changeType": "navigation"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    },
+    {
+      "id": "extract-top-stories",
+      "name": "提取前 10 条榜单数据",
+      "action": "extract_text",
+      "targetHint": "首页榜单表格或故事列表",
+      "expect": {
+        "textContains": "1."
+      },
+      "evidence": [
+        "page_snapshot"
+      ]
+    }
+  ],
+  "reporting": {
+    "recordFields": [
+      "stepId",
+      "expected",
+      "actual",
+      "title",
+      "url",
+      "changeType",
+      "successSignal",
+      "pageSource",
+      "observed",
+      "domObservation",
+      "screenshotPath"
+    ],
+    "useTemplate": "docs/bug-report-template.md"
+  },
+  "output": {
+    "kind": "markdown_table",
+    "path": ".tmp/reports/hackernews-top10.md",
+    "columns": [
+      "排名",
+      "标题",
+      "站点",
+      "分数",
+      "评论数"
+    ],
+    "limit": 10
+  }
+}

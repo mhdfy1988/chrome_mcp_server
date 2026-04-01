@@ -1,4 +1,5 @@
 import type { JSHandle, Page } from "puppeteer-core";
+import type { RawSnapshotElementSummary } from "./types.js";
 
 interface SelectorBuildOptions {
   preferClasses?: boolean;
@@ -12,6 +13,7 @@ export interface InspectionDomHelpers {
   normalizeWhitespace(value: unknown): string;
   clipText(value: string, maxLength: number): string;
   isVisible(element: Element): boolean;
+  isProbablyInteractive(element: Element): boolean;
   buildSelector(element: Element, options?: SelectorBuildOptions): string;
   findAssociatedLabel(element: HTMLElement): string | undefined;
   findAriaLabelledByText(element: Element): string | undefined;
@@ -20,6 +22,10 @@ export interface InspectionDomHelpers {
     element: Element,
     options?: AccessibleNameOptions,
   ): string | undefined;
+  summarizeInteractiveElement(
+    element: Element,
+    index: number,
+  ): RawSnapshotElementSummary;
 }
 
 export function createInspectionDomHelpers(): InspectionDomHelpers {
@@ -49,6 +55,10 @@ export function createInspectionDomHelpers(): InspectionDomHelpers {
 
   const isVisible = (element: Element) => {
     const htmlElement = element as HTMLElement;
+    if (!(htmlElement instanceof HTMLElement)) {
+      return false;
+    }
+
     const style = window.getComputedStyle(htmlElement);
     if (
       style.display === "none" ||
@@ -61,6 +71,38 @@ export function createInspectionDomHelpers(): InspectionDomHelpers {
     const rect = htmlElement.getBoundingClientRect();
     return rect.width > 0 && rect.height > 0;
   };
+
+  const interactiveRoles = new Set([
+    "button",
+    "link",
+    "checkbox",
+    "radio",
+    "tab",
+    "menuitem",
+    "option",
+    "switch",
+    "combobox",
+    "textbox",
+    "searchbox",
+  ]);
+
+  const interactionSignalWords = [
+    "btn",
+    "button",
+    "search",
+    "submit",
+    "query",
+    "action",
+    "click",
+    "icon-search",
+    "nav-search",
+    "go",
+    "搜索",
+    "检索",
+    "查找",
+    "提交",
+    "按钮",
+  ];
 
   const isUniqueSelector = (selector: string) => {
     try {
@@ -305,6 +347,76 @@ export function createInspectionDomHelpers(): InspectionDomHelpers {
     return undefined;
   };
 
+  const isProbablyInteractive = (element: Element) => {
+    if (!(element instanceof HTMLElement) || !isVisible(element)) {
+      return false;
+    }
+
+    const explicitRole = normalizeWhitespace(element.getAttribute("role")).toLowerCase();
+    const implicitRole = inferImplicitRole(element);
+    if (implicitRole || interactiveRoles.has(explicitRole)) {
+      return true;
+    }
+
+    const tag = element.tagName.toLowerCase();
+    if (
+      tag === "a" ||
+      tag === "button" ||
+      tag === "input" ||
+      tag === "textarea" ||
+      tag === "select" ||
+      tag === "summary" ||
+      element.contentEditable === "true"
+    ) {
+      return true;
+    }
+
+    const tabindex = normalizeWhitespace(element.getAttribute("tabindex"));
+    if (tabindex) {
+      const tabIndexValue = Number(tabindex);
+      if (!Number.isNaN(tabIndexValue) && tabIndexValue >= 0) {
+        return true;
+      }
+    }
+
+    if (element.hasAttribute("onclick") || typeof element.onclick === "function") {
+      return true;
+    }
+
+    const signalHaystack = [
+      normalizeWhitespace(element.id),
+      normalizeWhitespace(element.className),
+      normalizeWhitespace(element.getAttribute("name")),
+      normalizeWhitespace(element.getAttribute("title")),
+      normalizeWhitespace(element.getAttribute("aria-label")),
+      normalizeWhitespace(element.getAttribute("placeholder")),
+      normalizeWhitespace(element.getAttribute("data-testid")),
+      normalizeWhitespace(element.getAttribute("data-test")),
+      normalizeWhitespace(element.getAttribute("data-role")),
+    ]
+      .join(" ")
+      .toLocaleLowerCase();
+
+    if (
+      interactionSignalWords.some((keyword) => signalHaystack.includes(keyword))
+    ) {
+      return true;
+    }
+
+    const style = window.getComputedStyle(element);
+    if (style.cursor === "pointer") {
+      if (
+        element.querySelector("svg") ||
+        normalizeWhitespace(element.innerText ?? element.textContent) ||
+        signalHaystack
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
   const findAccessibleName = (
     element: Element,
     options: AccessibleNameOptions = {},
@@ -364,15 +476,79 @@ export function createInspectionDomHelpers(): InspectionDomHelpers {
     return undefined;
   };
 
+  const summarizeInteractiveElement = (
+    element: Element,
+    index: number,
+  ): RawSnapshotElementSummary => {
+    const htmlElement = element as HTMLElement;
+    const explicitRole = normalizeWhitespace(element.getAttribute("role"));
+    const role = explicitRole || inferImplicitRole(element);
+    const text = clipText(
+      normalizeWhitespace(htmlElement.innerText ?? htmlElement.textContent),
+      120,
+    );
+    const label = findAssociatedLabel(htmlElement);
+    const accessibleName = findAccessibleName(element);
+    const placeholder = normalizeWhitespace(element.getAttribute("placeholder"));
+    const title = normalizeWhitespace(element.getAttribute("title"));
+    const name = normalizeWhitespace(element.getAttribute("name"));
+    const className = normalizeWhitespace(htmlElement.className);
+
+    let value: string | undefined;
+    let type: string | undefined;
+    let checked: boolean | undefined;
+    let href: string | undefined;
+    let disabled = htmlElement.getAttribute("aria-disabled") === "true";
+
+    if (element instanceof HTMLInputElement) {
+      value = clipText(normalizeWhitespace(element.value), 120);
+      type = normalizeWhitespace(element.type);
+      checked = element.checked;
+      disabled = disabled || element.disabled;
+    } else if (element instanceof HTMLTextAreaElement) {
+      value = clipText(normalizeWhitespace(element.value), 120);
+      disabled = disabled || element.disabled;
+    } else if (element instanceof HTMLSelectElement) {
+      value = clipText(normalizeWhitespace(element.value), 120);
+      disabled = disabled || element.disabled;
+    } else if (element instanceof HTMLButtonElement) {
+      disabled = disabled || element.disabled;
+    } else if (element instanceof HTMLAnchorElement) {
+      href = element.href;
+    }
+
+    return {
+      index,
+      tag: element.tagName.toLowerCase(),
+      role: role || undefined,
+      explicitRole: explicitRole || undefined,
+      type: type || undefined,
+      text: text || undefined,
+      value: value || undefined,
+      accessibleName,
+      label,
+      placeholder: placeholder || undefined,
+      title: title || undefined,
+      name: name || undefined,
+      className: className || undefined,
+      selector: buildSelector(element, { preferClasses: true }),
+      href,
+      disabled,
+      checked,
+    };
+  };
+
   return {
     normalizeWhitespace,
     clipText,
     isVisible,
+    isProbablyInteractive,
     buildSelector,
     findAssociatedLabel,
     findAriaLabelledByText,
     inferImplicitRole,
     findAccessibleName,
+    summarizeInteractiveElement,
   };
 }
 

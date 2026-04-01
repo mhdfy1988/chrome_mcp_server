@@ -1,0 +1,90 @@
+{
+  "taskName": "python-docs-read",
+  "baseUrl": "https://docs.python.org/3/library/asyncio-task.html",
+  "goal": "验证技术文档页面的正文阅读、章节提取和结构化摘要输出。",
+  "preconditions": [
+    "不需要登录",
+    "允许访问公开互联网",
+    "允许直接进入文档正文页"
+  ],
+  "forbiddenActions": [
+    "login",
+    "logout",
+    "submit_feedback"
+  ],
+  "defaults": {
+    "preferSnapshotFlow": true,
+    "allowDirectSelector": true,
+    "stepTimeoutMs": 7000,
+    "captureScreenshotOnEachCriticalStep": true,
+    "captureConsoleLogsOnFailure": true,
+    "captureNetworkLogsOnFailure": true
+  },
+  "steps": [
+    {
+      "id": "open-article",
+      "name": "打开 Python 文档页",
+      "action": "open_page",
+      "input": {
+        "url": "https://docs.python.org/3/library/asyncio-task.html"
+      },
+      "expect": {
+        "titleContains": "asyncio",
+        "changeType": "navigation"
+      },
+      "evidence": [
+        "screenshot"
+      ]
+    },
+    {
+      "id": "snapshot-article",
+      "name": "记录页面结构快照",
+      "action": "page_snapshot",
+      "targetHint": "主文档页面",
+      "expect": {
+        "textContains": "Task"
+      },
+      "evidence": [
+        "page_snapshot"
+      ]
+    },
+    {
+      "id": "extract-main-content",
+      "name": "提取正文摘要",
+      "action": "extract_text",
+      "targetHint": "主文档正文区域",
+      "expect": {
+        "textContains": "asyncio"
+      },
+      "evidence": [
+        "page_snapshot"
+      ]
+    }
+  ],
+  "reporting": {
+    "recordFields": [
+      "stepId",
+      "expected",
+      "actual",
+      "title",
+      "url",
+      "changeType",
+      "successSignal",
+      "pageSource",
+      "observed",
+      "domObservation",
+      "screenshotPath"
+    ],
+    "useTemplate": "docs/bug-report-template.md"
+  },
+  "output": {
+    "kind": "markdown_summary",
+    "path": ".tmp/reports/python-asyncio-task-summary.md",
+    "sections": [
+      "标题",
+      "URL",
+      "关键小节",
+      "关键术语"
+    ]
+  }
+}
