@@ -95,7 +95,7 @@ export class BrowserManager {
     title?: string;
     url?: string;
     matchMode: WaitMatchMode;
-    timeoutMs: number;
+    timeoutMs?: number;
   }): Promise<PageSummary> {
     return waitForWithRuntime(this.getRuntimeDeps(), options);
   }

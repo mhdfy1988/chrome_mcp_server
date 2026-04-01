@@ -87,8 +87,8 @@ export function registerNavigationTools(
             .int()
             .positive()
             .max(120000)
-            .default(15000)
-            .describe("等待超时，单位毫秒。"),
+            .optional()
+            .describe("可选，等待超时，单位毫秒；默认跟随全局 stepTimeoutMs。"),
         })
         .superRefine((value, context) => {
           if (

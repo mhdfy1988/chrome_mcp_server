@@ -25,6 +25,8 @@ export interface ChromeConfig {
   stepTimeoutMs: number;
   maxRetries: number;
   retryBackoffMs: number;
+  actionSettleDelayMs: number;
+  followupWatchTimeoutMs: number;
 }
 
 export interface AppConfig {
@@ -51,6 +53,8 @@ interface CliArgs {
   stepTimeoutMs?: string;
   maxRetries?: string;
   retryBackoffMs?: string;
+  actionSettleDelayMs?: string;
+  followupWatchTimeoutMs?: string;
   help: boolean;
 }
 
@@ -120,6 +124,16 @@ export function loadConfig(
         400,
         "retryBackoffMs",
       ),
+      actionSettleDelayMs: parseNonNegativeInteger(
+        args.actionSettleDelayMs ?? env.CHROME_ACTION_SETTLE_DELAY_MS,
+        500,
+        "actionSettleDelayMs",
+      ),
+      followupWatchTimeoutMs: parseNonNegativeInteger(
+        args.followupWatchTimeoutMs ?? env.CHROME_FOLLOWUP_WATCH_TIMEOUT_MS,
+        2_000,
+        "followupWatchTimeoutMs",
+      ),
     },
   };
 
@@ -161,6 +175,8 @@ CLI 参数:
   --step-timeout-ms <ms>              单步动作超时，默认 12000
   --max-retries <count>               单步最大重试次数，默认 2
   --retry-backoff-ms <ms>             单步重试退避基数，默认 400
+  --action-settle-delay-ms <ms>       单步动作后稳定等待，默认 500
+  --followup-watch-timeout-ms <ms>    popup/new_target 跟随观察上限，默认 2000
   --help                              显示帮助
 
 环境变量:
@@ -179,6 +195,8 @@ CLI 参数:
   CHROME_STEP_TIMEOUT_MS
   CHROME_MAX_RETRIES
   CHROME_RETRY_BACKOFF_MS
+  CHROME_ACTION_SETTLE_DELAY_MS
+  CHROME_FOLLOWUP_WATCH_TIMEOUT_MS
 `.trim();
 }
 
@@ -256,6 +274,12 @@ function parseArgs(argv: string[]): CliArgs {
         break;
       case "--retry-backoff-ms":
         args.retryBackoffMs = requireValue();
+        break;
+      case "--action-settle-delay-ms":
+        args.actionSettleDelayMs = requireValue();
+        break;
+      case "--followup-watch-timeout-ms":
+        args.followupWatchTimeoutMs = requireValue();
         break;
       default:
         throw new Error(`无法识别的参数: ${flag}`);

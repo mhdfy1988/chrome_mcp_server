@@ -101,16 +101,17 @@ export async function waitForWithRuntime(
     title?: string;
     url?: string;
     matchMode: WaitMatchMode;
-    timeoutMs: number;
+    timeoutMs?: number;
   },
 ): Promise<PageSummary> {
   const page = await deps.resolvePage(options.pageId);
   const resolvedPageId = deps.requirePageId(page);
+  const timeoutMs = options.timeoutMs ?? deps.config.stepTimeoutMs;
 
   if (options.selector) {
     await page.waitForSelector(options.selector, {
       visible: true,
-      timeout: options.timeoutMs,
+      timeout: timeoutMs,
     });
   }
 
@@ -142,7 +143,7 @@ export async function waitForWithRuntime(
 
         return matches(document.body?.innerText ?? "");
       },
-      { timeout: options.timeoutMs },
+      { timeout: timeoutMs },
       {
         text: options.text,
         selector: options.textSelector,
@@ -165,7 +166,7 @@ export async function waitForWithRuntime(
 
         return normalizedActual.includes(normalizedExpected);
       },
-      { timeout: options.timeoutMs },
+      { timeout: timeoutMs },
       {
         title: options.title,
         matchMode: options.matchMode,
@@ -183,7 +184,7 @@ export async function waitForWithRuntime(
 
         return actual.includes(url);
       },
-      { timeout: options.timeoutMs },
+      { timeout: timeoutMs },
       {
         url: options.url,
         matchMode: options.matchMode,

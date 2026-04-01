@@ -141,7 +141,7 @@
   - `title`：等待页面标题
   - `url`：等待页面 URL
   - `matchMode`：`contains` 或 `exact`
-  - `timeoutMs`：超时时间
+  - `timeoutMs`：可选；不传时默认跟随全局 `stepTimeoutMs`
 
 ### 页面理解与元素查找
 
@@ -170,6 +170,11 @@
 
 - `click_and_wait`
   说明：先注册等待条件再点击，适合点击明确按钮、链接或标签后，会发生同页跳转、弹出新页、改标题、改 URL 或刷新局部内容的场景。优先传 `ref`。
+  判定规则：默认要求命中“强信号”（例如 `waitForSelector` 命中、显式 URL/标题条件命中、popup/new_target）；仅有弱变化不会判成功，避免误判。默认不强等导航，只有明确会跳页时再传 `waitForNavigation=true`。
+  返回重点：
+  - `changeType`：本次变化类型，例如 `same_page_update`、`navigation`、`popup`、`new_target`
+  - `successSignal`：本次到底是靠什么信号判成功，例如 `selector`、`url`、`title`、`popup`
+  - `domObservation`：仅在动作期间短时观察 DOM 变更后生成的摘要，包含是否变更、节点增删数量、文本/属性变化次数、命中最多的选择器摘要；不返回原始 mutation 明细
   常用参数：
   - `selector`
   - `waitForNavigation`
@@ -315,6 +320,8 @@ npm.cmd run start:stdio
 - `--step-timeout-ms <ms>`
 - `--max-retries <count>`
 - `--retry-backoff-ms <ms>`
+- `--action-settle-delay-ms <ms>`
+- `--followup-watch-timeout-ms <ms>`
 
 对应环境变量：
 
@@ -333,6 +340,8 @@ npm.cmd run start:stdio
 - `CHROME_STEP_TIMEOUT_MS`
 - `CHROME_MAX_RETRIES`
 - `CHROME_RETRY_BACKOFF_MS`
+- `CHROME_ACTION_SETTLE_DELAY_MS`
+- `CHROME_FOLLOWUP_WATCH_TIMEOUT_MS`
 
 目录约定（默认）：
 
@@ -340,7 +349,7 @@ npm.cmd run start:stdio
 - 临时脚本与测试工作目录：`.tmp/scripts`、`.tmp/workspaces`
 - 临时日志：`.tmp/logs`
 - 动作执行默认使用“执行 + 验证 + 重试”通用流程（重试参数由 `stepTimeout/maxRetries/retryBackoff` 控制）
-- 默认不依赖固定延迟（例如输入后固定 `150ms/800ms`）；仅在验证失败时按退避策略重试
+- 动作观察里有两段可配置等待：`actionSettleDelayMs`（默认 `500ms`）和 `followupWatchTimeoutMs`（默认 `2000ms`）；可按场景调小或设为 `0`
 
 说明：
 
@@ -436,6 +445,25 @@ openclaw.cmd mcp show chrome-browser --json
   "url": "http://127.0.0.1:3000/mcp",
   "connectionTimeoutMs": 30000
 }
+```
+
+注意：
+
+- [openclaw-http.json](/d:/C_Project/chrome_mcp_server/examples/openclaw-http.json) 只是客户端连接配置，只告诉 OpenClaw 去连哪个 MCP URL。
+- HTTP 模式下真正的浏览器参数，例如 `CHROME_STEP_TIMEOUT_MS`、`CHROME_ACTION_SETTLE_DELAY_MS`、`CHROME_FOLLOWUP_WATCH_TIMEOUT_MS`，需要配置在服务端启动这个 `start:http` 进程时的环境变量里，而不是写进这个 JSON。
+
+例如，你想用“快模式”启动 HTTP 服务，可以这样做：
+
+```powershell
+$env:CHROME_HEADLESS = "false"
+$env:CHROME_CHANNEL = "chrome"
+$env:CHROME_USER_DATA_DIR = "D:\C_Project\chrome_mcp_server\.profiles\active\http"
+$env:CHROME_STEP_TIMEOUT_MS = "4000"
+$env:CHROME_MAX_RETRIES = "0"
+$env:CHROME_RETRY_BACKOFF_MS = "1"
+$env:CHROME_ACTION_SETTLE_DELAY_MS = "0"
+$env:CHROME_FOLLOWUP_WATCH_TIMEOUT_MS = "800"
+npm.cmd run start:http
 ```
 
 如果后面要删掉这条配置：

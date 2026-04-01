@@ -15,6 +15,8 @@ export interface BrowserStatus {
   stepTimeoutMs: number;
   maxRetries: number;
   retryBackoffMs: number;
+  actionSettleDelayMs: number;
+  followupWatchTimeoutMs: number;
   userDataDir?: string;
   pages: PageSummary[];
 }
@@ -150,10 +152,41 @@ export interface SubmitInputResult {
   }>;
 }
 
+export interface DomObservationSummary {
+  changed: boolean;
+  mutationCount: number;
+  addedNodes: number;
+  removedNodes: number;
+  textChanges: number;
+  attributeChanges: number;
+  topSelectors: string[];
+}
+
+export type ClickAndWaitChangeType =
+  | "same_page_update"
+  | "navigation"
+  | "popup"
+  | "new_target"
+  | "none";
+
+export type ClickAndWaitSuccessSignal =
+  | "selector"
+  | "url"
+  | "title"
+  | "dom"
+  | "navigation"
+  | "popup"
+  | "new_target"
+  | "page_count_changed"
+  | "state_changed"
+  | "none";
+
 export interface ClickAndWaitResult {
   page: PageSummary;
   selector: string;
   pageSource: "current" | "popup" | "new_target";
+  changeType: ClickAndWaitChangeType;
+  successSignal: ClickAndWaitSuccessSignal;
   before: {
     title: string;
     url: string;
@@ -168,11 +201,13 @@ export interface ClickAndWaitResult {
     selector: boolean;
     title: boolean;
     url: boolean;
+    dom: boolean;
     stateChanged: boolean;
     popup: boolean;
     target: boolean;
     pageCountChanged: boolean;
   };
+  domObservation: DomObservationSummary;
   note?: string;
 }
 

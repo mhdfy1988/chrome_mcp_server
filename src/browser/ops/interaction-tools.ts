@@ -7,6 +7,8 @@ import type {
   WaitMatchMode,
 } from "../core/types.js";
 import {
+  determineActionChangeType,
+  determineActionSuccessSignal,
   runActionWithVerification,
   type ActionVerificationRule,
 } from "../flow/action-observer.js";
@@ -61,6 +63,7 @@ export async function clickAndWaitWithRuntime(
 ): Promise<ClickAndWaitResult> {
   const { page, selector } = await resolveActionTarget(deps, options);
   const verifications: ActionVerificationRule[] = [];
+  const shouldWaitForNavigation = options.waitForNavigation ?? false;
 
   if (options.waitForUrl) {
     verifications.push({
@@ -78,6 +81,13 @@ export async function clickAndWaitWithRuntime(
     });
   }
 
+  if (options.waitForSelector) {
+    verifications.push({
+      kind: "selectorVisible",
+      selector: options.waitForSelector,
+    });
+  }
+
   const observation = await runActionWithVerification(
     deps,
     page,
@@ -89,13 +99,15 @@ export async function clickAndWaitWithRuntime(
     },
     {
       timeoutMs: options.timeoutMs,
-      waitForNavigation: options.waitForNavigation,
+      waitForNavigation: shouldWaitForNavigation,
       waitUntil: options.waitUntil,
       waitForSelector: options.waitForSelector,
       waitForTitle: options.waitForTitle,
       waitForUrl: options.waitForUrl,
       matchMode: options.matchMode,
+      observeDom: true,
       requireObservedChange: true,
+      requireStrongObservedChange: true,
       verifications,
     },
   );
@@ -107,10 +119,21 @@ export async function clickAndWaitWithRuntime(
     ),
     selector,
     pageSource: observation.pageSource,
+    changeType: determineActionChangeType(observation),
+    successSignal: determineActionSuccessSignal(observation, {
+      waitForNavigation: shouldWaitForNavigation,
+      waitUntil: options.waitUntil,
+      waitForSelector: options.waitForSelector,
+      waitForTitle: options.waitForTitle,
+      waitForUrl: options.waitForUrl,
+      matchMode: options.matchMode,
+      timeoutMs: options.timeoutMs,
+    }),
     before: observation.before,
     after: observation.after,
     changed: observation.changed,
     observed: observation.observed,
+    domObservation: observation.domObservation,
     note:
       observation.attempts > 1
         ? `已重试 ${observation.attempts} 次。`

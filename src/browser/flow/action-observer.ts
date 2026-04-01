@@ -1,7 +1,13 @@
 import type { Page } from "puppeteer-core";
 import type { WaitUntilMode } from "../../config.js";
 import type { BrowserRuntimeDeps } from "../core/runtime-deps.js";
-import type { ClickAndWaitResult, WaitMatchMode } from "../core/types.js";
+import type {
+  ClickAndWaitChangeType,
+  ClickAndWaitResult,
+  DomObservationSummary,
+  ClickAndWaitSuccessSignal,
+  WaitMatchMode,
+} from "../core/types.js";
 
 export interface ActionWaitOptions {
   timeoutMs?: number;
@@ -11,6 +17,7 @@ export interface ActionWaitOptions {
   waitForTitle?: string;
   waitForUrl?: string;
   matchMode?: WaitMatchMode;
+  observeDom?: boolean;
 }
 
 export interface ActionObservationResult {
@@ -26,6 +33,7 @@ export interface ActionObservationResult {
   };
   changed: boolean;
   observed: ClickAndWaitResult["observed"];
+  domObservation: DomObservationSummary;
   note?: string;
 }
 
@@ -35,6 +43,10 @@ export type ActionVerificationRule =
       selector: string;
       expected: string;
       matchMode?: WaitMatchMode;
+    }
+  | {
+      kind: "selectorVisible";
+      selector: string;
     }
   | {
       kind: "url";
@@ -60,6 +72,7 @@ export interface ActionExecutionOptions extends ActionWaitOptions {
   maxRetries?: number;
   retryBackoffMs?: number;
   requireObservedChange?: boolean;
+  requireStrongObservedChange?: boolean;
   verifications?: ActionVerificationRule[];
 }
 
@@ -67,6 +80,20 @@ export interface ActionExecutionResult extends ActionObservationResult {
   attempts: number;
   verificationPassed: boolean;
   verificationReports: ActionVerificationReport[];
+}
+
+const DOM_OBSERVER_KEY = "__chromeMcpDomObserver";
+
+function createEmptyDomObservation(): DomObservationSummary {
+  return {
+    changed: false,
+    mutationCount: 0,
+    addedNodes: 0,
+    removedNodes: 0,
+    textChanges: 0,
+    attributeChanges: 0,
+    topSelectors: [],
+  };
 }
 
 async function capturePageState(page: Page): Promise<{
@@ -91,6 +118,18 @@ function normalizeUrlForComparison(value: string): string {
   }
 }
 
+function normalizeUrlWithoutHash(value: string): string {
+  try {
+    const url = new URL(value);
+    const search = Array.from(url.searchParams.entries())
+      .map(([key, currentValue]) => `${key}=${currentValue}`)
+      .join("&");
+    return `${url.origin}${url.pathname}${search ? `?${search}` : ""}`;
+  } catch {
+    return value.split("#", 1)[0]?.replace(/\?$/, "") ?? value;
+  }
+}
+
 function hasMeaningfulPageChange(
   before: { title: string; url: string },
   after: { title: string; url: string },
@@ -99,6 +138,13 @@ function hasMeaningfulPageChange(
     before.title !== after.title ||
     normalizeUrlForComparison(before.url) !== normalizeUrlForComparison(after.url)
   );
+}
+
+function hasNavigationLikeUrlChange(
+  before: { title: string; url: string },
+  after: { title: string; url: string },
+): boolean {
+  return normalizeUrlWithoutHash(before.url) !== normalizeUrlWithoutHash(after.url);
 }
 
 function textMatches(
@@ -156,6 +202,284 @@ async function readElementTextForVerification(
   }
 }
 
+async function readElementVisibilityForVerification(
+  page: Page,
+  selector: string,
+): Promise<{
+  ok: boolean;
+  visible: boolean;
+  note?: string;
+}> {
+  try {
+    const visible = await page.$eval(selector, (element) => {
+      if (!(element instanceof HTMLElement)) {
+        return false;
+      }
+
+      const style = window.getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return (
+        style.display !== "none" &&
+        style.visibility !== "hidden" &&
+        Number.parseFloat(style.opacity || "1") > 0 &&
+        rect.width > 0 &&
+        rect.height > 0
+      );
+    });
+
+    return {
+      ok: true,
+      visible,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      visible: false,
+      note: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+function hasStrongObservedChange(observation: ActionObservationResult): boolean {
+  return (
+    observation.pageSource !== "current" ||
+    observation.observed.navigation ||
+    observation.observed.selector ||
+    observation.observed.title ||
+    observation.observed.url ||
+    observation.observed.dom ||
+    observation.observed.popup ||
+    observation.observed.target
+  );
+}
+
+export function determineActionChangeType(
+  observation: ActionObservationResult,
+): ClickAndWaitChangeType {
+  if (observation.pageSource === "popup" || observation.observed.popup) {
+    return "popup";
+  }
+
+  if (observation.pageSource === "new_target" || observation.observed.target) {
+    return "new_target";
+  }
+
+  if (
+    observation.observed.navigation ||
+    hasNavigationLikeUrlChange(observation.before, observation.after)
+  ) {
+    return "navigation";
+  }
+
+  if (observation.observed.dom || observation.changed) {
+    return "same_page_update";
+  }
+
+  return "none";
+}
+
+export function determineActionSuccessSignal(
+  observation: ActionObservationResult,
+  options: ActionWaitOptions,
+): ClickAndWaitSuccessSignal {
+  if (options.waitForSelector && observation.observed.selector) {
+    return "selector";
+  }
+
+  if (options.waitForUrl && observation.observed.url) {
+    return "url";
+  }
+
+  if (options.waitForTitle && observation.observed.title) {
+    return "title";
+  }
+
+  if (observation.observed.popup) {
+    return "popup";
+  }
+
+  if (observation.observed.target) {
+    return "new_target";
+  }
+
+  if (observation.observed.navigation) {
+    return "navigation";
+  }
+
+  if (observation.observed.dom) {
+    return "dom";
+  }
+
+  if (observation.observed.pageCountChanged) {
+    return "page_count_changed";
+  }
+
+  if (observation.observed.stateChanged) {
+    return "state_changed";
+  }
+
+  return "none";
+}
+
+async function startDomObservation(page: Page): Promise<boolean> {
+  try {
+    await page.evaluate((observerKey) => {
+      const globalWindow = window as typeof window & Record<string, unknown>;
+      const existing = globalWindow[observerKey] as
+        | {
+            observer?: MutationObserver;
+          }
+        | undefined;
+
+      existing?.observer?.disconnect();
+
+      const selectorCounts: Record<string, number> = {};
+
+      const pickSelector = (element: Element | null): string => {
+        if (!element) {
+          return "unknown";
+        }
+
+        if (element.id) {
+          return `#${element.id.slice(0, 40)}`;
+        }
+
+        const testId =
+          element.getAttribute("data-testid") ?? element.getAttribute("data-test");
+        if (testId) {
+          return `[data-testid="${testId.slice(0, 40)}"]`;
+        }
+
+        const ariaLabel = element.getAttribute("aria-label");
+        if (ariaLabel) {
+          return `${element.tagName.toLowerCase()}[aria-label="${ariaLabel.slice(0, 30)}"]`;
+        }
+
+        const className =
+          typeof element.className === "string"
+            ? element.className.trim().split(/\s+/).filter(Boolean).slice(0, 2).join(".")
+            : "";
+
+        if (className) {
+          return `${element.tagName.toLowerCase()}.${className}`;
+        }
+
+        return element.tagName.toLowerCase();
+      };
+
+      const bumpSelector = (element: Element | null) => {
+        const selector = pickSelector(element);
+        selectorCounts[selector] = (selectorCounts[selector] ?? 0) + 1;
+      };
+
+      const summary: DomObservationSummary = {
+        changed: false,
+        mutationCount: 0,
+        addedNodes: 0,
+        removedNodes: 0,
+        textChanges: 0,
+        attributeChanges: 0,
+        topSelectors: [],
+      };
+
+      const observer = new MutationObserver((mutations) => {
+        summary.changed = true;
+
+        for (const mutation of mutations) {
+          summary.mutationCount += 1;
+
+          if (mutation.type === "childList") {
+            summary.addedNodes += mutation.addedNodes.length;
+            summary.removedNodes += mutation.removedNodes.length;
+            bumpSelector(mutation.target instanceof Element ? mutation.target : null);
+
+            mutation.addedNodes.forEach((node) => {
+              if (node instanceof Element) {
+                bumpSelector(node);
+                return;
+              }
+
+              if (node.parentElement) {
+                bumpSelector(node.parentElement);
+              }
+            });
+            continue;
+          }
+
+          if (mutation.type === "characterData") {
+            summary.textChanges += 1;
+            const parent =
+              mutation.target.parentElement ??
+              (mutation.target.parentNode instanceof Element
+                ? mutation.target.parentNode
+                : null);
+            bumpSelector(parent);
+            continue;
+          }
+
+          if (mutation.type === "attributes") {
+            summary.attributeChanges += 1;
+            bumpSelector(mutation.target instanceof Element ? mutation.target : null);
+          }
+        }
+      });
+
+      observer.observe(document.body ?? document.documentElement, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+        attributes: true,
+      });
+
+      globalWindow[observerKey] = {
+        observer,
+        stop: () => {
+          observer.disconnect();
+          summary.topSelectors = Object.entries(selectorCounts)
+            .sort((left, right) => right[1] - left[1])
+            .slice(0, 5)
+            .map(([selector]) => selector);
+          return summary;
+        },
+      };
+    }, DOM_OBSERVER_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function stopDomObservation(page: Page): Promise<DomObservationSummary> {
+  try {
+    return await page.evaluate((observerKey) => {
+      const globalWindow = window as typeof window & Record<string, unknown>;
+      const holder = globalWindow[observerKey] as
+        | {
+            stop?: () => DomObservationSummary;
+          }
+        | undefined;
+
+      if (!holder?.stop) {
+        return {
+          changed: false,
+          mutationCount: 0,
+          addedNodes: 0,
+          removedNodes: 0,
+          textChanges: 0,
+          attributeChanges: 0,
+          topSelectors: [],
+        };
+      }
+
+      const summary = holder.stop();
+      delete globalWindow[observerKey];
+      return summary;
+    }, DOM_OBSERVER_KEY);
+  } catch {
+    return createEmptyDomObservation();
+  }
+}
+
 async function evaluateVerificationRules(
   observation: ActionObservationResult,
   rules: ActionVerificationRule[],
@@ -183,6 +507,20 @@ async function evaluateVerificationRules(
           passed,
           detail: result.ok
             ? `expected(${mode})=${rule.expected}; actual=${result.text}`
+            : `selector=${rule.selector}; error=${result.note ?? "unknown"}`,
+        });
+        break;
+      }
+      case "selectorVisible": {
+        const result = await readElementVisibilityForVerification(
+          observation.finalPage,
+          rule.selector,
+        );
+        reports.push({
+          kind: "selectorVisible",
+          passed: result.ok && result.visible,
+          detail: result.ok
+            ? `selector=${rule.selector}; visible=${result.visible}`
             : `selector=${rule.selector}; error=${result.note ?? "unknown"}`,
         });
         break;
@@ -238,32 +576,52 @@ async function waitForActionConditions(
   options: ActionWaitOptions,
   observed: ActionObservationResult["observed"],
   timeoutMs: number,
+  baseline?: {
+    title: string;
+    url: string;
+    selectorVisible: boolean;
+  },
 ): Promise<void> {
   const matchMode = options.matchMode ?? "contains";
 
   if (options.waitForSelector) {
-    await page
-      .locator(options.waitForSelector)
-      .setTimeout(timeoutMs)
-      .wait()
-      .then(() => {
-        observed.selector = true;
-      })
-      .catch(() => {
-        // 继续依赖其他观察信号，不在这里直接判失败。
-      });
+    if (!baseline?.selectorVisible) {
+      await page
+        .locator(options.waitForSelector)
+        .setTimeout(timeoutMs)
+        .wait()
+        .then(() => {
+          observed.selector = true;
+        })
+        .catch(() => {
+          // 继续依赖其他观察信号，不在这里直接判失败。
+        });
+    }
   }
 
   if (options.waitForTitle) {
+    const baselineTitleMatched =
+      baseline !== undefined &&
+      textMatches(baseline.title, options.waitForTitle, matchMode);
+
     await page
       .waitForFunction(
-        ({ expectedTitle, currentMatchMode }) => {
+        ({ expectedTitle, currentMatchMode, previousTitle, requireChange }) => {
           const actual = document.title;
-          if (currentMatchMode === "exact") {
-            return actual === expectedTitle;
+          const matched =
+            currentMatchMode === "exact"
+              ? actual === expectedTitle
+              : actual.includes(expectedTitle);
+
+          if (!matched) {
+            return false;
           }
 
-          return actual.includes(expectedTitle);
+          if (requireChange) {
+            return actual !== previousTitle;
+          }
+
+          return true;
         },
         {
           timeout: timeoutMs,
@@ -271,6 +629,8 @@ async function waitForActionConditions(
         {
           expectedTitle: options.waitForTitle,
           currentMatchMode: matchMode,
+          previousTitle: baseline?.title ?? "",
+          requireChange: baselineTitleMatched,
         },
       )
       .then(() => {
@@ -282,15 +642,29 @@ async function waitForActionConditions(
   }
 
   if (options.waitForUrl) {
+    const baselineUrlMatched =
+      baseline !== undefined &&
+      textMatches(baseline.url, options.waitForUrl, matchMode);
+
     await page
       .waitForFunction(
-        ({ expectedUrl, currentMatchMode }) => {
+        ({ expectedUrl, currentMatchMode, previousUrl, requireChange }) => {
           const actual = location.href;
-          if (currentMatchMode === "exact") {
-            return actual === expectedUrl;
+
+          const matched =
+            currentMatchMode === "exact"
+              ? actual === expectedUrl
+              : actual.includes(expectedUrl);
+
+          if (!matched) {
+            return false;
           }
 
-          return actual.includes(expectedUrl);
+          if (requireChange) {
+            return actual !== previousUrl;
+          }
+
+          return true;
         },
         {
           timeout: timeoutMs,
@@ -298,6 +672,8 @@ async function waitForActionConditions(
         {
           expectedUrl: options.waitForUrl,
           currentMatchMode: matchMode,
+          previousUrl: baseline?.url ?? "",
+          requireChange: baselineUrlMatched,
         },
       )
       .then(() => {
@@ -323,7 +699,16 @@ export async function observeAction(
   const before = await capturePageState(page);
   const timeoutMs = options.timeoutMs ?? deps.config.stepTimeoutMs;
   const waitUntil = options.waitUntil ?? "domcontentloaded";
-  const followupTimeoutMs = Math.min(timeoutMs, 2000);
+  const domObserverStarted = options.observeDom
+    ? await startDomObservation(page)
+    : false;
+  const selectorBaseline = options.waitForSelector
+    ? await readElementVisibilityForVerification(page, options.waitForSelector)
+    : undefined;
+  const followupTimeoutMs = Math.min(
+    timeoutMs,
+    deps.config.followupWatchTimeoutMs,
+  );
   const beforeTargets = new Set(browser.targets());
   const beforePageCount = (await browser.pages()).length;
   const sourceTarget = page.target();
@@ -333,11 +718,13 @@ export async function observeAction(
     selector: false,
     title: false,
     url: false,
+    dom: false,
     stateChanged: false,
     popup: false,
     target: false,
     pageCountChanged: false,
   };
+  let domObservation = createEmptyDomObservation();
 
   const waiters: Array<Promise<void>> = [];
 
@@ -365,7 +752,13 @@ export async function observeAction(
     );
   }
 
-  waiters.push(waitForActionConditions(page, options, observed, timeoutMs));
+  waiters.push(
+    waitForActionConditions(page, options, observed, timeoutMs, {
+      title: before.title,
+      url: before.url,
+      selectorVisible: selectorBaseline?.ok ? selectorBaseline.visible : false,
+    }),
+  );
 
   let resolvePopup!: (value: Page | null) => void;
   const popupPromise = new Promise<Page | null>((resolve) => {
@@ -389,27 +782,37 @@ export async function observeAction(
     })
     .catch(() => null);
 
-  await action();
+  let popupPage: Page | null = null;
+  let targetPage: Page | null = null;
 
-  if (waiters.length > 0) {
-    await Promise.allSettled(waiters);
-    await wait(500);
+  try {
+    await action();
+
+    if (waiters.length > 0) {
+      await Promise.allSettled(waiters);
+      await wait(deps.config.actionSettleDelayMs);
+    }
+
+    popupPage = await Promise.race([
+      popupPromise,
+      new Promise<null>((resolve) =>
+        setTimeout(() => resolve(null), followupTimeoutMs),
+      ),
+    ]);
+
+    targetPage = await Promise.race([
+      targetPromise,
+      new Promise<null>((resolve) =>
+        setTimeout(() => resolve(null), followupTimeoutMs),
+      ),
+    ]);
+  } finally {
+    page.off("popup", popupHandler);
+    if (domObserverStarted) {
+      domObservation = await stopDomObservation(page);
+      observed.dom = domObservation.changed;
+    }
   }
-
-  const popupPage = await Promise.race([
-    popupPromise,
-    new Promise<null>((resolve) =>
-      setTimeout(() => resolve(null), followupTimeoutMs),
-    ),
-  ]);
-  page.off("popup", popupHandler);
-
-  const targetPage = await Promise.race([
-    targetPromise,
-    new Promise<null>((resolve) =>
-      setTimeout(() => resolve(null), followupTimeoutMs),
-    ),
-  ]);
 
   observed.popup = Boolean(popupPage);
   observed.target = Boolean(targetPage);
@@ -439,6 +842,11 @@ export async function observeAction(
       options,
       observed,
       Math.min(timeoutMs, 5000),
+      {
+        title: before.title,
+        url: before.url,
+        selectorVisible: false,
+      },
     );
     await finalPage.bringToFront().catch(() => {
       // 如果 bringToFront 失败，仍然继续读取真实页面状态。
@@ -455,6 +863,7 @@ export async function observeAction(
     observed.selector ||
     observed.title ||
     observed.url ||
+    observed.dom ||
     observed.stateChanged ||
     observed.popup ||
     observed.target ||
@@ -467,6 +876,7 @@ export async function observeAction(
     after,
     changed,
     observed,
+    domObservation,
     note: changed
       ? undefined
       : "动作已经执行，但没有观察到明确的导航、匹配条件或页面状态变化。",
@@ -484,6 +894,8 @@ export async function runActionWithVerification(
   const rules = options.verifications ?? [];
   const timeoutMs = options.timeoutMs ?? deps.config.stepTimeoutMs;
   const requireObservedChange = options.requireObservedChange ?? false;
+  const requireStrongObservedChange =
+    options.requireStrongObservedChange ?? false;
 
   let currentPage = page;
   let lastObservation: ActionObservationResult | undefined;
@@ -506,7 +918,8 @@ export async function runActionWithVerification(
 
     const passed =
       verification.passed &&
-      (!requireObservedChange || observation.changed);
+      (!requireObservedChange || observation.changed) &&
+      (!requireStrongObservedChange || hasStrongObservedChange(observation));
 
     if (passed) {
       return {
@@ -537,6 +950,15 @@ export async function runActionWithVerification(
 
   if (requireObservedChange && !lastObservation.changed) {
     failureReasons.push("未观察到页面变化。");
+  }
+
+  if (
+    requireStrongObservedChange &&
+    !hasStrongObservedChange(lastObservation)
+  ) {
+    failureReasons.push(
+      "只观察到弱变化（例如仅标题/URL轻微漂移或噪声状态），未命中强信号。",
+    );
   }
 
   throw new Error(

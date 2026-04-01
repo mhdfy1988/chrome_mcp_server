@@ -42,6 +42,8 @@ export class BrowserSession {
       stepTimeoutMs: this.config.stepTimeoutMs,
       maxRetries: this.config.maxRetries,
       retryBackoffMs: this.config.retryBackoffMs,
+      actionSettleDelayMs: this.config.actionSettleDelayMs,
+      followupWatchTimeoutMs: this.config.followupWatchTimeoutMs,
       userDataDir: this.config.userDataDir,
       pages,
     };

@@ -86,8 +86,8 @@ export function registerInteractionTools(
             .describe("等待和点击共用的超时时间。"),
           waitForNavigation: z
             .boolean()
-            .default(true)
-            .describe("是否在点击前先注册导航等待。"),
+            .optional()
+            .describe("可选，是否强制在点击前先注册导航等待；默认按成功信号判断，只有明确会跳页时再开启。"),
           waitUntil: waitUntilSchema
             .default("domcontentloaded")
             .describe("导航等待条件。"),
