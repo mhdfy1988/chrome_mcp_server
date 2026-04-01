@@ -6,7 +6,10 @@ import type {
   PageSummary,
   WaitMatchMode,
 } from "../core/types.js";
-import { observeAction } from "../flow/action-observer.js";
+import {
+  runActionWithVerification,
+  type ActionVerificationRule,
+} from "../flow/action-observer.js";
 export { submitInputWithRuntime } from "./submit-input.js";
 
 export async function clickWithRuntime(
@@ -19,12 +22,26 @@ export async function clickWithRuntime(
   },
 ): Promise<PageSummary> {
   const { page, pageId, selector } = await resolveActionTarget(deps, options);
-  await page
-    .locator(selector)
-    .setTimeout(options.timeoutMs ?? deps.config.defaultTimeoutMs)
-    .click();
+  const result = await runActionWithVerification(
+    deps,
+    page,
+    async (currentPage) => {
+      await currentPage
+        .locator(selector)
+        .setTimeout(options.timeoutMs ?? deps.config.stepTimeoutMs)
+        .click();
+    },
+    {
+      timeoutMs: options.timeoutMs,
+      maxRetries: 0,
+      requireObservedChange: false,
+    },
+  );
 
-  return deps.summarizePage(pageId, page);
+  return deps.summarizePage(
+    result.pageSource === "current" ? pageId : deps.requirePageId(result.finalPage),
+    result.finalPage,
+  );
 }
 
 export async function clickAndWaitWithRuntime(
@@ -43,14 +60,31 @@ export async function clickAndWaitWithRuntime(
   },
 ): Promise<ClickAndWaitResult> {
   const { page, selector } = await resolveActionTarget(deps, options);
+  const verifications: ActionVerificationRule[] = [];
 
-  const observation = await observeAction(
+  if (options.waitForUrl) {
+    verifications.push({
+      kind: "url",
+      expected: options.waitForUrl,
+      matchMode: options.matchMode,
+    });
+  }
+
+  if (options.waitForTitle) {
+    verifications.push({
+      kind: "title",
+      expected: options.waitForTitle,
+      matchMode: options.matchMode,
+    });
+  }
+
+  const observation = await runActionWithVerification(
     deps,
     page,
-    async () => {
-      await page
+    async (currentPage) => {
+      await currentPage
         .locator(selector)
-        .setTimeout(options.timeoutMs ?? deps.config.defaultTimeoutMs)
+        .setTimeout(options.timeoutMs ?? deps.config.stepTimeoutMs)
         .click();
     },
     {
@@ -61,6 +95,8 @@ export async function clickAndWaitWithRuntime(
       waitForTitle: options.waitForTitle,
       waitForUrl: options.waitForUrl,
       matchMode: options.matchMode,
+      requireObservedChange: true,
+      verifications,
     },
   );
 
@@ -75,7 +111,10 @@ export async function clickAndWaitWithRuntime(
     after: observation.after,
     changed: observation.changed,
     observed: observation.observed,
-    note: observation.note,
+    note:
+      observation.attempts > 1
+        ? `已重试 ${observation.attempts} 次。`
+        : observation.note,
   };
 }
 
@@ -92,23 +131,45 @@ export async function typeTextWithRuntime(
   },
 ): Promise<PageSummary> {
   const { page, pageId, selector } = await resolveActionTarget(deps, options);
-  const locator = page
-    .locator(selector)
-    .setTimeout(options.timeoutMs ?? deps.config.defaultTimeoutMs);
+  const observation = await runActionWithVerification(
+    deps,
+    page,
+    async (currentPage) => {
+      const locator = currentPage
+        .locator(selector)
+        .setTimeout(options.timeoutMs ?? deps.config.stepTimeoutMs);
 
-  await locator.click({ clickCount: 3 });
-  if (options.clear) {
-    await locator.fill("");
-  }
-  if (options.clear) {
-    await locator.fill(options.text);
-  } else {
-    await page.keyboard.type(options.text);
-  }
-  if (options.submit) {
-    await page.keyboard.press("Enter");
-  }
-  return deps.summarizePage(pageId, page);
+      await locator.click({ clickCount: 3 });
+      if (options.clear) {
+        await locator.fill("");
+        await locator.fill(options.text);
+      } else {
+        await currentPage.keyboard.type(options.text);
+      }
+      if (options.submit) {
+        await currentPage.keyboard.press("Enter");
+      }
+    },
+    {
+      timeoutMs: options.timeoutMs,
+      requireObservedChange: false,
+      verifications: [
+        {
+          kind: "inputValue",
+          selector,
+          expected: options.text,
+          matchMode: options.clear ? "exact" : "contains",
+        },
+      ],
+    },
+  );
+
+  return deps.summarizePage(
+    observation.pageSource === "current"
+      ? pageId
+      : deps.requirePageId(observation.finalPage),
+    observation.finalPage,
+  );
 }
 
 export async function pressKeyWithRuntime(

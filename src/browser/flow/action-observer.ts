@@ -1,4 +1,4 @@
-﻿import type { Page } from "puppeteer-core";
+import type { Page } from "puppeteer-core";
 import type { WaitUntilMode } from "../../config.js";
 import type { BrowserRuntimeDeps } from "../core/runtime-deps.js";
 import type { ClickAndWaitResult, WaitMatchMode } from "../core/types.js";
@@ -27,6 +27,46 @@ export interface ActionObservationResult {
   changed: boolean;
   observed: ClickAndWaitResult["observed"];
   note?: string;
+}
+
+export type ActionVerificationRule =
+  | {
+      kind: "inputValue";
+      selector: string;
+      expected: string;
+      matchMode?: WaitMatchMode;
+    }
+  | {
+      kind: "url";
+      expected: string;
+      matchMode?: WaitMatchMode;
+    }
+  | {
+      kind: "title";
+      expected: string;
+      matchMode?: WaitMatchMode;
+    }
+  | {
+      kind: "pageSwitched";
+    };
+
+export interface ActionVerificationReport {
+  kind: ActionVerificationRule["kind"];
+  passed: boolean;
+  detail: string;
+}
+
+export interface ActionExecutionOptions extends ActionWaitOptions {
+  maxRetries?: number;
+  retryBackoffMs?: number;
+  requireObservedChange?: boolean;
+  verifications?: ActionVerificationRule[];
+}
+
+export interface ActionExecutionResult extends ActionObservationResult {
+  attempts: number;
+  verificationPassed: boolean;
+  verificationReports: ActionVerificationReport[];
 }
 
 async function capturePageState(page: Page): Promise<{
@@ -59,6 +99,138 @@ function hasMeaningfulPageChange(
     before.title !== after.title ||
     normalizeUrlForComparison(before.url) !== normalizeUrlForComparison(after.url)
   );
+}
+
+function textMatches(
+  actual: string,
+  expected: string,
+  mode: WaitMatchMode = "contains",
+): boolean {
+  if (mode === "exact") {
+    return actual === expected;
+  }
+
+  return actual.includes(expected);
+}
+
+function wait(delayMs: number): Promise<void> {
+  if (delayMs <= 0) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => setTimeout(resolve, delayMs));
+}
+
+async function readElementTextForVerification(
+  page: Page,
+  selector: string,
+): Promise<{
+  ok: boolean;
+  text: string;
+  note?: string;
+}> {
+  try {
+    const value = await page.$eval(selector, (element) => {
+      if (
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLTextAreaElement ||
+        element instanceof HTMLSelectElement
+      ) {
+        return String(element.value ?? "");
+      }
+
+      const asHTMLElement = element as HTMLElement;
+      return String(asHTMLElement.innerText ?? element.textContent ?? "");
+    });
+
+    return {
+      ok: true,
+      text: value,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      text: "",
+      note: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+async function evaluateVerificationRules(
+  observation: ActionObservationResult,
+  rules: ActionVerificationRule[],
+): Promise<{
+  passed: boolean;
+  reports: ActionVerificationReport[];
+}> {
+  if (rules.length === 0) {
+    return { passed: true, reports: [] };
+  }
+
+  const reports: ActionVerificationReport[] = [];
+
+  for (const rule of rules) {
+    switch (rule.kind) {
+      case "inputValue": {
+        const result = await readElementTextForVerification(
+          observation.finalPage,
+          rule.selector,
+        );
+        const mode = rule.matchMode ?? "exact";
+        const passed = result.ok && textMatches(result.text, rule.expected, mode);
+        reports.push({
+          kind: "inputValue",
+          passed,
+          detail: result.ok
+            ? `expected(${mode})=${rule.expected}; actual=${result.text}`
+            : `selector=${rule.selector}; error=${result.note ?? "unknown"}`,
+        });
+        break;
+      }
+      case "url": {
+        const mode = rule.matchMode ?? "contains";
+        const actual = observation.after.url;
+        reports.push({
+          kind: "url",
+          passed: textMatches(actual, rule.expected, mode),
+          detail: `expected(${mode})=${rule.expected}; actual=${actual}`,
+        });
+        break;
+      }
+      case "title": {
+        const mode = rule.matchMode ?? "contains";
+        const actual = observation.after.title;
+        reports.push({
+          kind: "title",
+          passed: textMatches(actual, rule.expected, mode),
+          detail: `expected(${mode})=${rule.expected}; actual=${actual}`,
+        });
+        break;
+      }
+      case "pageSwitched": {
+        const switched =
+          observation.pageSource !== "current" ||
+          observation.observed.popup ||
+          observation.observed.target ||
+          observation.observed.pageCountChanged;
+        reports.push({
+          kind: "pageSwitched",
+          passed: switched,
+          detail: `source=${observation.pageSource}; popup=${observation.observed.popup}; target=${observation.observed.target}; pageCountChanged=${observation.observed.pageCountChanged}`,
+        });
+        break;
+      }
+      default: {
+        const _exhaustiveCheck: never = rule;
+        void _exhaustiveCheck;
+      }
+    }
+  }
+
+  return {
+    passed: reports.every((report) => report.passed),
+    reports,
+  };
 }
 
 async function waitForActionConditions(
@@ -149,7 +321,7 @@ export async function observeAction(
   }
 
   const before = await capturePageState(page);
-  const timeoutMs = options.timeoutMs ?? deps.config.defaultTimeoutMs;
+  const timeoutMs = options.timeoutMs ?? deps.config.stepTimeoutMs;
   const waitUntil = options.waitUntil ?? "domcontentloaded";
   const followupTimeoutMs = Math.min(timeoutMs, 2000);
   const beforeTargets = new Set(browser.targets());
@@ -221,7 +393,7 @@ export async function observeAction(
 
   if (waiters.length > 0) {
     await Promise.allSettled(waiters);
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await wait(500);
   }
 
   const popupPage = await Promise.race([
@@ -301,3 +473,73 @@ export async function observeAction(
   };
 }
 
+export async function runActionWithVerification(
+  deps: BrowserRuntimeDeps,
+  page: Page,
+  action: (page: Page) => Promise<void>,
+  options: ActionExecutionOptions = {},
+): Promise<ActionExecutionResult> {
+  const maxRetries = options.maxRetries ?? deps.config.maxRetries;
+  const retryBackoffMs = options.retryBackoffMs ?? deps.config.retryBackoffMs;
+  const rules = options.verifications ?? [];
+  const timeoutMs = options.timeoutMs ?? deps.config.stepTimeoutMs;
+  const requireObservedChange = options.requireObservedChange ?? false;
+
+  let currentPage = page;
+  let lastObservation: ActionObservationResult | undefined;
+  let lastReports: ActionVerificationReport[] = [];
+
+  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+    const observation = await observeAction(
+      deps,
+      currentPage,
+      async () => action(currentPage),
+      {
+        ...options,
+        timeoutMs,
+      },
+    );
+    lastObservation = observation;
+
+    const verification = await evaluateVerificationRules(observation, rules);
+    lastReports = verification.reports;
+
+    const passed =
+      verification.passed &&
+      (!requireObservedChange || observation.changed);
+
+    if (passed) {
+      return {
+        ...observation,
+        attempts: attempt + 1,
+        verificationPassed: true,
+        verificationReports: verification.reports,
+      };
+    }
+
+    if (attempt < maxRetries) {
+      currentPage = observation.finalPage;
+      await deps.syncPages();
+      await wait(retryBackoffMs * (attempt + 1));
+    }
+  }
+
+  if (!lastObservation) {
+    throw new Error("动作执行失败：没有捕获到有效结果。");
+  }
+
+  const failureReasons: string[] = [];
+  for (const report of lastReports) {
+    if (!report.passed) {
+      failureReasons.push(`${report.kind}: ${report.detail}`);
+    }
+  }
+
+  if (requireObservedChange && !lastObservation.changed) {
+    failureReasons.push("未观察到页面变化。");
+  }
+
+  throw new Error(
+    `动作验证失败（重试 ${maxRetries + 1} 次后仍未通过）：${failureReasons.join(" | ") || "未知原因"}`,
+  );
+}

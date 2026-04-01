@@ -39,6 +39,9 @@ export class BrowserSession {
       headless: this.config.headless,
       defaultTimeoutMs: this.config.defaultTimeoutMs,
       navigationTimeoutMs: this.config.navigationTimeoutMs,
+      stepTimeoutMs: this.config.stepTimeoutMs,
+      maxRetries: this.config.maxRetries,
+      retryBackoffMs: this.config.retryBackoffMs,
       userDataDir: this.config.userDataDir,
       pages,
     };

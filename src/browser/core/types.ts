@@ -12,6 +12,9 @@ export interface BrowserStatus {
   headless: boolean;
   defaultTimeoutMs: number;
   navigationTimeoutMs: number;
+  stepTimeoutMs: number;
+  maxRetries: number;
+  retryBackoffMs: number;
   userDataDir?: string;
   pages: PageSummary[];
 }

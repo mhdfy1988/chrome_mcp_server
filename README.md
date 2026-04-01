@@ -312,6 +312,9 @@ npm.cmd run start:stdio
 - `--user-data-dir <path>`
 - `--default-timeout-ms <ms>`
 - `--navigation-timeout-ms <ms>`
+- `--step-timeout-ms <ms>`
+- `--max-retries <count>`
+- `--retry-backoff-ms <ms>`
 
 对应环境变量：
 
@@ -327,12 +330,17 @@ npm.cmd run start:stdio
 - `CHROME_USER_DATA_DIR`
 - `CHROME_DEFAULT_TIMEOUT_MS`
 - `CHROME_NAVIGATION_TIMEOUT_MS`
+- `CHROME_STEP_TIMEOUT_MS`
+- `CHROME_MAX_RETRIES`
+- `CHROME_RETRY_BACKOFF_MS`
 
 目录约定（默认）：
 
 - Chrome 用户数据目录：`.profiles/active/default`
 - 临时脚本与测试工作目录：`.tmp/scripts`、`.tmp/workspaces`
 - 临时日志：`.tmp/logs`
+- 动作执行默认使用“执行 + 验证 + 重试”通用流程（重试参数由 `stepTimeout/maxRetries/retryBackoff` 控制）
+- 默认不依赖固定延迟（例如输入后固定 `150ms/800ms`）；仅在验证失败时按退避策略重试
 
 说明：
 

@@ -22,6 +22,9 @@ export interface ChromeConfig {
   userDataDir?: string;
   defaultTimeoutMs: number;
   navigationTimeoutMs: number;
+  stepTimeoutMs: number;
+  maxRetries: number;
+  retryBackoffMs: number;
 }
 
 export interface AppConfig {
@@ -45,6 +48,9 @@ interface CliArgs {
   userDataDir?: string;
   defaultTimeoutMs?: string;
   navigationTimeoutMs?: string;
+  stepTimeoutMs?: string;
+  maxRetries?: string;
+  retryBackoffMs?: string;
   help: boolean;
 }
 
@@ -99,6 +105,21 @@ export function loadConfig(
         30_000,
         "navigationTimeoutMs",
       ),
+      stepTimeoutMs: parseInteger(
+        args.stepTimeoutMs ?? env.CHROME_STEP_TIMEOUT_MS,
+        12_000,
+        "stepTimeoutMs",
+      ),
+      maxRetries: parseNonNegativeInteger(
+        args.maxRetries ?? env.CHROME_MAX_RETRIES,
+        2,
+        "maxRetries",
+      ),
+      retryBackoffMs: parseInteger(
+        args.retryBackoffMs ?? env.CHROME_RETRY_BACKOFF_MS,
+        400,
+        "retryBackoffMs",
+      ),
     },
   };
 
@@ -137,6 +158,9 @@ CLI 参数:
   --user-data-dir <path>              Chrome 用户数据目录，默认 ./.profiles/active/default
   --default-timeout-ms <ms>           元素操作超时，默认 15000
   --navigation-timeout-ms <ms>        页面导航超时，默认 30000
+  --step-timeout-ms <ms>              单步动作超时，默认 12000
+  --max-retries <count>               单步最大重试次数，默认 2
+  --retry-backoff-ms <ms>             单步重试退避基数，默认 400
   --help                              显示帮助
 
 环境变量:
@@ -152,6 +176,9 @@ CLI 参数:
   CHROME_USER_DATA_DIR
   CHROME_DEFAULT_TIMEOUT_MS
   CHROME_NAVIGATION_TIMEOUT_MS
+  CHROME_STEP_TIMEOUT_MS
+  CHROME_MAX_RETRIES
+  CHROME_RETRY_BACKOFF_MS
 `.trim();
 }
 
@@ -221,6 +248,15 @@ function parseArgs(argv: string[]): CliArgs {
       case "--navigation-timeout-ms":
         args.navigationTimeoutMs = requireValue();
         break;
+      case "--step-timeout-ms":
+        args.stepTimeoutMs = requireValue();
+        break;
+      case "--max-retries":
+        args.maxRetries = requireValue();
+        break;
+      case "--retry-backoff-ms":
+        args.retryBackoffMs = requireValue();
+        break;
       default:
         throw new Error(`无法识别的参数: ${flag}`);
     }
@@ -288,6 +324,24 @@ function parseInteger(
 
   if (!Number.isFinite(parsed) || Number.isNaN(parsed) || parsed <= 0) {
     throw new Error(`${label} 必须是正整数，当前值: ${value}`);
+  }
+
+  return parsed;
+}
+
+function parseNonNegativeInteger(
+  value: string | undefined,
+  fallback: number,
+  label: string,
+): number {
+  if (!value) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+
+  if (!Number.isFinite(parsed) || Number.isNaN(parsed) || parsed < 0) {
+    throw new Error(`${label} 必须是非负整数，当前值: ${value}`);
   }
 
   return parsed;
