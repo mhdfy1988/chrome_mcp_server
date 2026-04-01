@@ -114,6 +114,19 @@
         "screenshot",
         "page_snapshot"
       ]
+    },
+    {
+      "id": "play-video",
+      "name": "点击播放并验证进入播放态",
+      "action": "click",
+      "targetHint": "视频播放器的播放按钮",
+      "expect": {
+        "videoPlaying": true
+      },
+      "evidence": [
+        "screenshot",
+        "page_snapshot"
+      ]
     }
   ],
   "reporting": {
