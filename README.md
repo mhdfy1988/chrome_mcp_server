@@ -5,9 +5,9 @@
 这版不是只做“能开浏览器”的最小壳，而是已经补到了更适合模型实际使用的工作流：
 
 - 先用 `page_snapshot` 看懂页面
-- 再用 `find_elements` 找到目标元素
-- 再用 `wait_for` 等页面进入稳定状态
-- 最后再做 `click`、`type_text`、`screenshot` 等动作
+- 再用 `find_elements` 锁定明确元素
+- 然后按“点击输入框 -> 输入 -> 点击按钮”的顺序执行
+- 只有主路径不够时，才使用兜底工具
 
 ## 适用场景
 
@@ -36,27 +36,70 @@
 
 - 浏览器管理：`browser_status`、`list_pages`、`open_page`、`select_page`、`close_page`、`close_browser`
 - 页面导航：`navigate`、`go_back`、`reload_page`
-- 页面理解：`page_snapshot`、`extract_text`、`evaluate`
+- 页面理解：`page_snapshot`、`extract_text`（高级模式可额外启用 `evaluate`）
 - 元素定位：`find_elements`
 - 同步等待：`wait_for`
-- 页面操作：`click`、`type_text`、`press_key`
+- 页面操作：`click`、`type_text`、`press_key`（高级模式可额外启用 `submit_input`）
 - 结果留证：`screenshot`
 - 调试辅助：`console_logs`、`network_logs`
 
+## 工具分层
+
+为了让使用者更自然地走“像人一样”的浏览器操作，这套工具默认分成 3 层：
+
+- 主路工具：`page_snapshot`、`find_elements`、`click`、`type_text`、`click_and_wait`、`screenshot`
+- 辅助工具：`open_page`、`navigate`、`wait_for`、`list_pages`
+- 兜底工具：`find_primary_inputs`、`submit_input`、`evaluate`
+
+建议优先把主路工具走通，再考虑辅助或兜底工具。不要一开始就直接使用 `submit_input` 这类技术型工具。
+
+## 工具模式
+
+当前服务支持两种工具模式：
+
+- `human-first`
+  说明：默认模式。只暴露主路工具和必要辅助工具，不主动暴露 `find_primary_inputs`、`submit_input`、`evaluate` 这些高级兜底工具。
+
+- `advanced`
+  说明：高级模式。额外暴露 `find_primary_inputs`、`submit_input`、`evaluate`，适合排障、复杂页面和高级接入。
+
+如果你的目标是模拟正常人的页面操作，建议保持默认的 `human-first`。
+
+## 默认操作原则
+
+如果目标是模拟正常人的页面操作，默认按下面几条来：
+
+1. 先看页面，再找明确元素。
+2. 有明确输入框时，先 `click` 再 `type_text`。
+3. 有明确按钮或链接时，优先 `click` / `click_and_wait`，不要先用 `submit_input`。
+4. 一次只做一个关键动作，动作后立刻回读页面状态。
+5. 只有主路径失败，才进入 `find_primary_inputs`、`submit_input`、`evaluate` 这些兜底工具。
+
 ## 推荐工作流
 
-相比“先猜一个 CSS 选择器再硬点”，更推荐这样用：
+相比“先猜一个 CSS 选择器再硬点”，更推荐这样走：
 
 1. `open_page` 或 `navigate` 打开页面
-2. `wait_for` 等标题、URL 或关键元素稳定
-3. `page_snapshot` 查看页面标题、正文摘要、可交互元素
-4. `find_elements` 按文本或 placeholder 找出目标元素
-5. `click` / `type_text` / `press_key` 执行动作
-6. `screenshot` 留证，必要时用 `console_logs` / `network_logs` 排错
+2. `page_snapshot` 查看页面标题、正文摘要、可交互元素和 `ref`
+3. `find_elements` 找出明确的输入框、按钮或链接，并拿到对应 `ref`
+4. `click` 点击输入框或目标元素，优先传 `ref`
+5. `type_text` 输入文本，优先传 `ref`
+6. `click_and_wait` 点击明确按钮或链接，并等待页面变化，优先传 `ref`
+7. `page_snapshot` 或 `list_pages` 回读当前页面状态
+8. `screenshot` 留证，必要时再看 `console_logs` / `network_logs`
+
+如果你显式开启了 `advanced` 模式，而第 3 到第 6 步仍然不够，再按这个顺序补兜底：
+
+1. `wait_for`
+2. `find_primary_inputs`
+3. `submit_input`
+4. `evaluate`
 
 这套方式比“全文文本匹配 + 手写选择器”更稳，也更接近成熟浏览器自动化工具的推荐实践。
 
 ## 当前工具
+
+下面默认先介绍 `human-first` 模式下可见的工具；标注“高级模式”的，只有在 `advanced` 模式下才会暴露。
 
 ### 浏览器与页面
 
@@ -103,30 +146,30 @@
 ### 页面理解与元素查找
 
 - `page_snapshot`
-  说明：返回页面标题、正文摘要、可见标题、可交互元素列表、可访问名称、推断 role 和建议选择器。
-  适合先“看懂页面”。
+  说明：返回页面标题、正文摘要、可见标题、可交互元素列表、稳定 `ref`、可访问名称、推断 role 和建议选择器。
+  适合先“看懂页面”，是推荐工作流的起点。
 
 - `find_elements`
-  说明：按可访问名称、标签、文本、值、placeholder、href 或 selector 模糊查找页面中的可交互元素，并按更接近语义定位的结果优先排序。
-  适合减少手写 CSS 选择器。
+  说明：按可访问名称、标签、文本、值、placeholder、href 或 selector 模糊查找页面中的可交互元素，并按更接近语义定位的结果优先排序，同时返回可直接用于后续动作的 `ref`。
+  适合在 `page_snapshot` 之后锁定明确的输入框、按钮或链接。
 
 - `find_primary_inputs`
-  说明：扫描整页可见输入控件，按“主输入框”的概率排序。
-  适合页面没有明确“搜索”字样时，兜底找导航区或顶部主输入框。
+  说明：高级模式。仅在 `page_snapshot` 和 `find_elements` 仍然不够时使用，扫描整页可见输入控件，按“主输入框”的概率排序。
+  适合作为兜底或诊断工具，定位页面没有明确“搜索”字样时的导航区或顶部主输入框。
 
 - `extract_text`
-  说明：提取整个页面或某个元素的文本内容。
+  说明：提取整个页面或某个元素的文本内容。优先传 `ref`；也支持 `selector`。
 
 - `evaluate`
-  说明：在页面上下文里执行一段 JavaScript 表达式并返回结果。
+  说明：高级模式。在页面上下文里执行一段 JavaScript 表达式并返回结果。
 
 ### 页面操作
 
 - `click`
-  说明：点击页面中的一个元素。选择器支持 Puppeteer locator 语法，除了 CSS，也可用 text / aria / 穿透 shadow DOM 的方式定位。
+  说明：模拟用户点击页面中的明确元素。优先传 `page_snapshot` 或 `find_elements` 返回的 `ref`；也支持 Puppeteer locator 风格的 selector。
 
 - `click_and_wait`
-  说明：先注册等待条件再点击，适合点击后会同页跳转、弹出新页、改标题、改 URL 或刷新局部内容的场景。
+  说明：先注册等待条件再点击，适合点击明确按钮、链接或标签后，会发生同页跳转、弹出新页、改标题、改 URL 或刷新局部内容的场景。优先传 `ref`。
   常用参数：
   - `selector`
   - `waitForNavigation`
@@ -137,7 +180,7 @@
   - `matchMode`
 
 - `type_text`
-  说明：向输入框或可编辑元素输入文本。选择器同样支持 Puppeteer locator 语法。
+  说明：模拟用户向输入框或可编辑元素输入文本。优先传 `ref`；也支持 Puppeteer locator 风格的 selector。
   常用参数：
   - `selector`
   - `text`
@@ -148,13 +191,14 @@
   说明：发送一个键盘按键，例如 `Enter`、`Tab`、`Escape`。
 
 - `submit_input`
-  说明：对指定输入框按多种策略尝试提交，内部会把“动作”和“等待”绑定在一起，适合站点表单结构不稳定时做验证。
+  说明：高级模式下的兜底工具。对指定输入框按多种策略尝试提交，适合页面没有明确提交按钮，或需要排查表单提交流程时做验证。
 
 ### 截图与排错
 
 - `screenshot`
   说明：截图当前页面，或截图指定元素。
   常用参数：
+  - `ref`：截取 `page_snapshot` 或 `find_elements` 返回的某个元素
   - `selector`：截指定元素
   - `fullPage`：是否整页截图
   - `format`：`png` 或 `jpeg`
@@ -189,12 +233,24 @@ npm.cmd run build
 npm.cmd run start:stdio
 ```
 
+显式开启高级模式：
+
+```powershell
+npm.cmd run start:stdio -- --tool-mode advanced
+```
+
 ### 2. 走 HTTP
 
 适合常驻服务，然后让客户端通过 `http://127.0.0.1:3000/mcp` 连接。
 
 ```powershell
 npm.cmd run start:http
+```
+
+显式开启高级模式：
+
+```powershell
+npm.cmd run start:http -- --tool-mode advanced
 ```
 
 健康检查：
@@ -212,7 +268,7 @@ Invoke-RestMethod -Uri http://127.0.0.1:3000/health
 ```powershell
 $env:CHROME_HEADLESS = "false"
 $env:CHROME_CHANNEL = "chrome"
-$env:CHROME_USER_DATA_DIR = "D:\C_Project\chrome_mcp_server\.chrome-profile"
+$env:CHROME_USER_DATA_DIR = "D:\C_Project\chrome_mcp_server\.profiles\active\default"
 npm.cmd run start:stdio
 ```
 
@@ -221,7 +277,7 @@ npm.cmd run start:stdio
 先手工启动 Chrome：
 
 ```powershell
-& "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="D:\C_Project\chrome_mcp_server\.chrome-profile"
+& "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="D:\C_Project\chrome_mcp_server\.profiles\active\default"
 ```
 
 再启动 MCP Server：
@@ -245,6 +301,7 @@ npm.cmd run start:stdio
 可执行参数见 [config.ts](/d:/C_Project/chrome_mcp_server/src/config.ts)：
 
 - `--transport <stdio|http>`
+- `--tool-mode <human-first|advanced>`
 - `--host <host>`
 - `--port <port>`
 - `--browser-url <url>`
@@ -259,6 +316,7 @@ npm.cmd run start:stdio
 对应环境变量：
 
 - `CHROME_MCP_TRANSPORT`
+- `CHROME_MCP_TOOL_MODE`
 - `CHROME_MCP_HOST`
 - `CHROME_MCP_PORT`
 - `CHROME_BROWSER_URL`
@@ -269,6 +327,17 @@ npm.cmd run start:stdio
 - `CHROME_USER_DATA_DIR`
 - `CHROME_DEFAULT_TIMEOUT_MS`
 - `CHROME_NAVIGATION_TIMEOUT_MS`
+
+目录约定（默认）：
+
+- Chrome 用户数据目录：`.profiles/active/default`
+- 临时脚本与测试工作目录：`.tmp/scripts`、`.tmp/workspaces`
+- 临时日志：`.tmp/logs`
+
+说明：
+
+- 默认工具模式是 `human-first`
+- 只有显式传 `--tool-mode advanced` 或设置 `CHROME_MCP_TOOL_MODE=advanced` 时，才会暴露 `find_primary_inputs`、`submit_input`、`evaluate`
 
 ## 接入 Codex
 
@@ -285,7 +354,7 @@ tool_timeout_sec = 120
 [mcp_servers.chrome_browser.env]
 CHROME_HEADLESS = "false"
 CHROME_CHANNEL = "chrome"
-CHROME_USER_DATA_DIR = "D:/C_Project/chrome_mcp_server/.chrome-profile"
+CHROME_USER_DATA_DIR = "D:/C_Project/chrome_mcp_server/.profiles/active/default"
 ```
 
 如果你想让 Codex 走 HTTP：
@@ -337,7 +406,7 @@ openclaw.cmd mcp show chrome-browser --json
   "env": {
     "CHROME_HEADLESS": "false",
     "CHROME_CHANNEL": "chrome",
-    "CHROME_USER_DATA_DIR": "D:/C_Project/chrome_mcp_server/.chrome-profile-openclaw"
+    "CHROME_USER_DATA_DIR": "D:/C_Project/chrome_mcp_server/.profiles/active/openclaw"
   },
   "connectionTimeoutMs": 30000
 }
@@ -419,6 +488,15 @@ openclaw.cmd mcp unset chrome-browser
     "title": "百度",
     "matchMode": "contains",
     "timeoutMs": 15000
+  }
+}
+```
+
+```json
+{
+  "name": "click",
+  "arguments": {
+    "selector": "#chat-textarea"
   }
 }
 ```
@@ -521,9 +599,11 @@ openclaw.cmd mcp unset chrome-browser
 
 1. `page_snapshot`
 2. `find_elements`
-3. `wait_for(selector=...)` 或 `find_primary_inputs`
-4. `click_and_wait` / `submit_input`
-5. 再退回 `click` / `type_text`
+3. `click` / `type_text`
+4. `click_and_wait`
+5. `wait_for(selector=...)`
+6. 只有前面还不够时，再用 `find_primary_inputs` 或 `submit_input`
+7. 最后才退到 `evaluate`
 
 不要一开始就硬写一个复杂的 CSS 选择器。优先用 Puppeteer locator 语法里的更短选择方式，例如：
 

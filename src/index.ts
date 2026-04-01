@@ -21,7 +21,7 @@ async function main(): Promise<void> {
   const browserManager = new BrowserManager(config.chrome);
 
   if (config.transport === "stdio") {
-    await runStdioServer(browserManager);
+    await runStdioServer(config, browserManager);
   } else {
     await runHttpServer(config, browserManager);
   }
@@ -29,8 +29,13 @@ async function main(): Promise<void> {
   setupShutdownHooks(browserManager);
 }
 
-async function runStdioServer(browserManager: BrowserManager): Promise<void> {
-  const server = createMcpServer(browserManager);
+async function runStdioServer(
+  config: AppConfig,
+  browserManager: BrowserManager,
+): Promise<void> {
+  const server = createMcpServer(browserManager, {
+    toolMode: config.toolMode,
+  });
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error("[chrome-mcp] STDIO server started.");
@@ -47,6 +52,7 @@ async function runHttpServer(
     res.json({
       ok: true,
       transport: config.transport,
+      toolMode: config.toolMode,
       host: config.host,
       port: config.port,
       browser: status,
@@ -54,7 +60,9 @@ async function runHttpServer(
   });
 
   app.post("/mcp", async (req: Request, res: Response) => {
-    const server = createMcpServer(browserManager);
+    const server = createMcpServer(browserManager, {
+      toolMode: config.toolMode,
+    });
 
     try {
       const transport = new StreamableHTTPServerTransport({

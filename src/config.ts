@@ -1,6 +1,7 @@
 import path from "node:path";
 
 export type TransportMode = "stdio" | "http";
+export type ToolMode = "human-first" | "advanced";
 export type ChromeChannel =
   | "chrome"
   | "chrome-beta"
@@ -27,11 +28,13 @@ export interface AppConfig {
   transport: TransportMode;
   host: string;
   port: number;
+  toolMode: ToolMode;
   chrome: ChromeConfig;
 }
 
 interface CliArgs {
   transport?: string;
+  toolMode?: string;
   host?: string;
   port?: string;
   browserURL?: string;
@@ -46,6 +49,7 @@ interface CliArgs {
 }
 
 const VALID_TRANSPORTS = new Set<TransportMode>(["stdio", "http"]);
+const VALID_TOOL_MODES = new Set<ToolMode>(["human-first", "advanced"]);
 const VALID_CHANNELS = new Set<ChromeChannel>([
   "chrome",
   "chrome-beta",
@@ -62,18 +66,22 @@ export function loadConfig(
   const transport = parseTransport(
     args.transport ?? env.CHROME_MCP_TRANSPORT ?? "stdio",
   );
+  const toolMode = parseToolMode(
+    args.toolMode ?? env.CHROME_MCP_TOOL_MODE ?? "human-first",
+  );
   const host = args.host ?? env.CHROME_MCP_HOST ?? "127.0.0.1";
   const port = parseInteger(args.port ?? env.CHROME_MCP_PORT, 3000, "port");
 
   const userDataDirRaw =
     args.userDataDir ??
     env.CHROME_USER_DATA_DIR ??
-    path.resolve(process.cwd(), ".chrome-profile");
+    path.resolve(process.cwd(), ".profiles/active/default");
 
   const config: AppConfig = {
     transport,
     host,
     port,
+    toolMode,
     chrome: {
       browserURL: args.browserURL ?? env.CHROME_BROWSER_URL,
       browserWSEndpoint: args.browserWSEndpoint ?? env.CHROME_WS_ENDPOINT,
@@ -117,6 +125,7 @@ Chrome MCP Server
 
 CLI 参数:
   --transport <stdio|http>            传输模式，默认 stdio
+  --tool-mode <human-first|advanced>  工具模式，默认 human-first
   --host <host>                       HTTP 监听地址，默认 127.0.0.1
   --port <port>                       HTTP 端口，默认 3000
   --browser-url <url>                 连接已开启远程调试的 Chrome，例如 http://127.0.0.1:9222
@@ -125,13 +134,14 @@ CLI 参数:
   --channel <chrome|chrome-beta|chrome-dev|chrome-canary>
                                       启动已安装的 Chrome 渠道，默认 chrome
   --headless <true|false>             是否无头模式，默认 false
-  --user-data-dir <path>              Chrome 用户数据目录，默认 ./.chrome-profile
+  --user-data-dir <path>              Chrome 用户数据目录，默认 ./.profiles/active/default
   --default-timeout-ms <ms>           元素操作超时，默认 15000
   --navigation-timeout-ms <ms>        页面导航超时，默认 30000
   --help                              显示帮助
 
 环境变量:
   CHROME_MCP_TRANSPORT
+  CHROME_MCP_TOOL_MODE
   CHROME_MCP_HOST
   CHROME_MCP_PORT
   CHROME_BROWSER_URL
@@ -181,6 +191,9 @@ function parseArgs(argv: string[]): CliArgs {
       case "--host":
         args.host = requireValue();
         break;
+      case "--tool-mode":
+        args.toolMode = requireValue();
+        break;
       case "--port":
         args.port = requireValue();
         break;
@@ -222,6 +235,14 @@ function parseTransport(value: string): TransportMode {
   }
 
   return value as TransportMode;
+}
+
+function parseToolMode(value: string): ToolMode {
+  if (!VALID_TOOL_MODES.has(value as ToolMode)) {
+    throw new Error(`不支持的 tool mode: ${value}`);
+  }
+
+  return value as ToolMode;
 }
 
 function parseChannel(value?: string): ChromeChannel | undefined {

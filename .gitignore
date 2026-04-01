@@ -5,6 +5,14 @@ dist/
 .venv/
 .venv-win/
 npm-debug.log*
+.tmp-*/
+.tmp-*.mjs
+.tmp-*.log
+.tmp/
+.profiles/
+.tools/
+.playwright-mcp/
+playwright-*.png
 docs/baidu-home-smoke-test.png
 docs/baidu-gold-search-result.png
 docs/baidu-gold-search-fullpage.png
