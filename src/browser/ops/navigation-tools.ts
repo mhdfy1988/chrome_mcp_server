@@ -167,8 +167,9 @@ export async function waitForWithRuntime(
   if (initialPageState.pageState === "overlay_blocking") {
     const kind = initialPageState.overlay?.kind ?? "unknown";
     const evidence = initialPageState.overlay?.evidence?.join(", ") ?? "无";
-    throw new Error(
-      `页面当前存在可关闭的遮挡弹窗（overlay_blocking，kind=${kind}，evidence=${evidence}）。建议先调用 dismiss_blocking_overlays，再继续当前会话。`,
+    // 只告警，不阻断 wait_for，让调用方自己决定是否先关闭遮挡层。
+    console.warn(
+      `页面存在遮挡弹窗（overlay_blocking，kind=${kind}，evidence=${evidence}），继续执行 wait_for。`,
     );
   }
 

@@ -195,6 +195,7 @@
   - `url`：等待页面 URL
   - `matchMode`：`contains` 或 `exact`
   - `timeoutMs`：可选；不传时默认跟随全局 `stepTimeoutMs`
+  - 遮挡层说明：若页面处于 `overlay_blocking`，`wait_for` 不再直接抛错阻断，只会记录告警并继续等待；是否先调用 `dismiss_blocking_overlays` 由调用方自行决定。
 
 ### 页面理解与元素查找
 
