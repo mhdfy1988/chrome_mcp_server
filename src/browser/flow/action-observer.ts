@@ -9,6 +9,11 @@ import type {
   ClickAndWaitSuccessSignal,
   WaitMatchMode,
 } from "../core/types.js";
+import {
+  describeAuthRequiredAction,
+  describeVerificationAction,
+  readPageState,
+} from "../core/page-state.js";
 
 export interface ActionWaitOptions {
   timeoutMs?: number;
@@ -41,6 +46,7 @@ export interface ActionObservationResult {
   contentReady: boolean;
   contentReadySignal: ContentReadySignal;
   domObservation: DomObservationSummary;
+  actionError?: string;
   note?: string;
 }
 
@@ -121,6 +127,20 @@ async function capturePageState(page: Page): Promise<{
     title: await page.title(),
     url: page.url(),
   };
+}
+
+function formatActionError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function isRecoverableActionError(error: unknown): boolean {
+  const message = formatActionError(error).toLocaleLowerCase();
+  return [
+    "detached frame",
+    "frame detached",
+    "execution context was destroyed",
+    "cannot find context with specified id",
+  ].some((needle) => message.includes(needle));
 }
 
 function normalizeUrlForComparison(value: string): string {
@@ -257,7 +277,9 @@ async function readElementVisibilityForVerification(
   }
 }
 
-function hasStrongObservedChange(observation: ActionObservationResult): boolean {
+export function hasStrongObservedChange(
+  observation: ActionObservationResult,
+): boolean {
   return (
     observation.pageSource !== "current" ||
     observation.observed.navigation ||
@@ -268,6 +290,110 @@ function hasStrongObservedChange(observation: ActionObservationResult): boolean 
     observation.observed.popup ||
     observation.observed.target
   );
+}
+
+export async function evaluateActionVerification(
+  observation: ActionObservationResult,
+  options: Pick<
+    ActionExecutionOptions,
+    "verifications" | "requireObservedChange" | "requireStrongObservedChange"
+  > = {},
+): Promise<{
+  passed: boolean;
+  reports: ActionVerificationReport[];
+}> {
+  const verification = await evaluateVerificationRules(
+    observation,
+    options.verifications ?? [],
+  );
+
+  const passed =
+    verification.passed &&
+    (!options.requireObservedChange || observation.changed) &&
+    (!options.requireStrongObservedChange ||
+      hasStrongObservedChange(observation));
+
+  return {
+    passed,
+    reports: verification.reports,
+  };
+}
+
+export async function collectActionFailureReasons(
+  observation: ActionObservationResult,
+  reports: ActionVerificationReport[],
+  options: Pick<
+    ActionExecutionOptions,
+    | "requireObservedChange"
+    | "requireStrongObservedChange"
+    | "contentReadySelector"
+    | "contentReadyText"
+  > = {},
+): Promise<string[]> {
+  const failureReasons: string[] = [];
+
+  for (const report of reports) {
+    if (!report.passed) {
+      failureReasons.push(`${report.kind}: ${report.detail}`);
+    }
+  }
+
+  if (options.requireObservedChange && !observation.changed) {
+    failureReasons.push("未观察到页面变化。");
+  }
+
+  if (
+    options.requireStrongObservedChange &&
+    !hasStrongObservedChange(observation)
+  ) {
+    failureReasons.push(
+      "只观察到弱变化（例如仅标题/URL轻微漂移或噪声状态），未命中强信号。",
+    );
+  }
+
+  if (
+    (options.contentReadySelector || options.contentReadyText) &&
+    !observation.contentReady
+  ) {
+    failureReasons.push("路由可能已变化，但内容区仍未达到就绪条件。");
+  }
+
+  const pageState = await readPageState(observation.finalPage);
+  if (pageState.pageState === "blocked_by_verification") {
+    const providerHint = pageState.verification?.providerHint ?? "unknown";
+    const evidence = pageState.verification?.evidence?.join(", ") ?? "无";
+    const guidance = describeVerificationAction(
+      pageState.verification?.recommendedAction ?? "manual_resume",
+    );
+    failureReasons.push(
+      `页面当前处于验证拦截状态（blocked_by_verification，provider=${providerHint}，evidence=${evidence}）。${guidance}`,
+    );
+  }
+
+  if (pageState.pageState === "auth_required") {
+    const kind = pageState.authRequired?.kind ?? "unknown";
+    const evidence = pageState.authRequired?.evidence?.join(", ") ?? "无";
+    const guidance = describeAuthRequiredAction(
+      pageState.authRequired?.recommendedAction ?? "manual_login",
+    );
+    failureReasons.push(
+      `页面当前处于登录拦截状态（auth_required，kind=${kind}，evidence=${evidence}）。${guidance}`,
+    );
+  }
+
+  if (pageState.pageState === "overlay_blocking") {
+    const kind = pageState.overlay?.kind ?? "unknown";
+    const evidence = pageState.overlay?.evidence?.join(", ") ?? "无";
+    failureReasons.push(
+      `页面当前存在可关闭的遮挡弹窗（overlay_blocking，kind=${kind}，evidence=${evidence}）。建议先调用 dismiss_blocking_overlays，再继续当前会话。`,
+    );
+  }
+
+  if (observation.actionError) {
+    failureReasons.push(`动作执行瞬时错误: ${observation.actionError}`);
+  }
+
+  return failureReasons;
 }
 
 export function determineActionChangeType(
@@ -934,9 +1060,17 @@ export async function observeAction(
 
   let popupPage: Page | null = null;
   let targetPage: Page | null = null;
+  let actionError: string | undefined;
 
   try {
-    await action();
+    try {
+      await action();
+    } catch (error) {
+      if (!isRecoverableActionError(error)) {
+        throw error;
+      }
+      actionError = formatActionError(error);
+    }
 
     if (waiters.length > 0) {
       await Promise.allSettled(waiters);
@@ -1046,9 +1180,14 @@ export async function observeAction(
     contentReady,
     contentReadySignal,
     domObservation,
+    actionError,
     note: changed
-      ? undefined
-      : "动作已经执行，但没有观察到明确的导航、匹配条件或页面状态变化。",
+      ? actionError
+        ? `动作后出现瞬时句柄错误，但页面变化已被成功跟踪：${actionError}`
+        : undefined
+      : actionError
+        ? `动作执行后出现瞬时句柄错误，且未观察到足够页面变化：${actionError}`
+        : "动作已经执行，但没有观察到明确的导航、匹配条件或页面状态变化。",
   };
 }
 
@@ -1082,15 +1221,14 @@ export async function runActionWithVerification(
     );
     lastObservation = observation;
 
-    const verification = await evaluateVerificationRules(observation, rules);
+    const verification = await evaluateActionVerification(observation, {
+      verifications: rules,
+      requireObservedChange,
+      requireStrongObservedChange,
+    });
     lastReports = verification.reports;
 
-    const passed =
-      verification.passed &&
-      (!requireObservedChange || observation.changed) &&
-      (!requireStrongObservedChange || hasStrongObservedChange(observation));
-
-    if (passed) {
+    if (verification.passed) {
       return {
         ...observation,
         attempts: attempt + 1,
@@ -1110,32 +1248,16 @@ export async function runActionWithVerification(
     throw new Error("动作执行失败：没有捕获到有效结果。");
   }
 
-  const failureReasons: string[] = [];
-  for (const report of lastReports) {
-    if (!report.passed) {
-      failureReasons.push(`${report.kind}: ${report.detail}`);
-    }
-  }
-
-  if (requireObservedChange && !lastObservation.changed) {
-    failureReasons.push("未观察到页面变化。");
-  }
-
-  if (
-    requireStrongObservedChange &&
-    !hasStrongObservedChange(lastObservation)
-  ) {
-    failureReasons.push(
-      "只观察到弱变化（例如仅标题/URL轻微漂移或噪声状态），未命中强信号。",
-    );
-  }
-
-  if (
-    (options.contentReadySelector || options.contentReadyText) &&
-    !lastObservation.contentReady
-  ) {
-    failureReasons.push("路由可能已变化，但内容区仍未达到就绪条件。");
-  }
+  const failureReasons = await collectActionFailureReasons(
+    lastObservation,
+    lastReports,
+    {
+      requireObservedChange,
+      requireStrongObservedChange,
+      contentReadySelector: options.contentReadySelector,
+      contentReadyText: options.contentReadyText,
+    },
+  );
 
   throw new Error(
     `动作验证失败（重试 ${maxRetries + 1} 次后仍未通过）：${failureReasons.join(" | ") || "未知原因"}`,

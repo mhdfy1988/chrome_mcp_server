@@ -13,7 +13,7 @@ import {
   runActionWithVerification,
   type ActionVerificationRule,
 } from "../flow/action-observer.js";
-export { submitInputWithRuntime } from "./submit-input.js";
+export { submitInputWithRuntime, submitWithPlanWithRuntime } from "./submit-input.js";
 
 export async function clickWithRuntime(
   deps: BrowserRuntimeDeps,

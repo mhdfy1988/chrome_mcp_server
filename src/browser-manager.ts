@@ -6,16 +6,20 @@ import {
 import type { BrowserInspectionDeps } from "./browser/core/inspection-deps.js";
 import { findElementsWithInspection } from "./browser/inspect/find-elements.js";
 import { findPrimaryInputsWithInspection } from "./browser/inspect/find-primary-inputs.js";
+import { findPrimaryResultsWithInspection } from "./browser/inspect/find-primary-results.js";
 import { findSubmitTargetsWithInspection } from "./browser/inspect/find-submit-targets.js";
 import { extractTextWithInspection, evaluateWithInspection } from "./browser/inspect/inspection-text.js";
+import { readMediaStateWithInspection } from "./browser/inspect/media-state.js";
 import {
   clickAndWaitWithRuntime,
   clickWithRuntime,
   pressKeyWithRuntime,
   pressKeyAndWaitWithRuntime,
   submitInputWithRuntime,
+  submitWithPlanWithRuntime,
   typeTextWithRuntime,
 } from "./browser/ops/interaction-tools.js";
+import { dismissBlockingOverlaysWithRuntime } from "./browser/ops/overlay-tools.js";
 import {
   goBackWithRuntime,
   navigateWithRuntime,
@@ -31,16 +35,20 @@ import type {
   BrowserStatus,
   ClickAndWaitResult,
   ConsoleLogEntry,
+  DismissBlockingOverlaysResult,
   FindElementsResult,
   FindPrimaryInputsResult,
+  FindPrimaryResultsResult,
   FindSubmitTargetsResult,
   NavigateResult,
   NetworkLogEntry,
   PageSnapshotResult,
   PageSummary,
   PressKeyAndWaitResult,
+  ReadMediaStateResult,
   ScreenshotResult,
   SubmitInputResult,
+  SubmitWithPlanResult,
   WaitMatchMode,
 } from "./browser/core/types.js";
 import type { ChromeConfig, WaitUntilMode } from "./config.js";
@@ -171,6 +179,7 @@ export class BrowserManager {
     pageId?: string;
     ref?: string;
     selector?: string;
+    mode?: "auto" | "main" | "article" | "body";
     maxLength: number;
   }): Promise<{ page: PageSummary; text: string }> {
     return extractTextWithInspection(this.getInspectionDeps(), options);
@@ -219,6 +228,22 @@ export class BrowserManager {
     return findPrimaryInputsWithInspection(this.getInspectionDeps(), options);
   }
 
+  public async findPrimaryResults(options: {
+    pageId?: string;
+    query?: string;
+    maxResults: number;
+  }): Promise<FindPrimaryResultsResult> {
+    const result = await findPrimaryResultsWithInspection(
+      this.getInspectionDeps(),
+      options,
+    );
+
+    return {
+      ...result,
+      results: this.session.attachElementRefs(result.page.pageId, result.results),
+    };
+  }
+
   public async findSubmitTargets(options: {
     pageId?: string;
     ref?: string;
@@ -243,6 +268,27 @@ export class BrowserManager {
     });
   }
 
+  public async readMediaState(options: {
+    pageId?: string;
+    selector?: string;
+    maxResults: number;
+  }): Promise<ReadMediaStateResult> {
+    const result = await readMediaStateWithInspection(this.getInspectionDeps(), options);
+
+    return {
+      ...result,
+      media: this.session.attachElementRefs(result.page.pageId, result.media),
+    };
+  }
+
+  public async dismissBlockingOverlays(options: {
+    pageId?: string;
+    timeoutMs?: number;
+    maxSteps?: number;
+  }): Promise<DismissBlockingOverlaysResult> {
+    return dismissBlockingOverlaysWithRuntime(this.getRuntimeDeps(), options);
+  }
+
   public async submitInput(options: {
     selector: string;
     pageId?: string;
@@ -250,6 +296,41 @@ export class BrowserManager {
   }): Promise<SubmitInputResult> {
     await assertSubmitInputAllowed(this.getRuntimeDeps(), options);
     return submitInputWithRuntime(this.getRuntimeDeps(), options);
+  }
+
+  public async submitWithPlan(options: {
+    selector?: string;
+    ref?: string;
+    pageId?: string;
+    timeoutMs?: number;
+    waitForNavigation?: boolean;
+    waitUntil?: WaitUntilMode;
+    waitForSelector?: string;
+    waitForTitle?: string;
+    waitForUrl?: string;
+    contentReadySelector?: string;
+    contentReadyText?: string;
+    contentReadyTextSelector?: string;
+    contentReadyTimeoutMs?: number;
+    matchMode?: WaitMatchMode;
+    maxPlanSteps?: number;
+  }): Promise<SubmitWithPlanResult> {
+    const page = await this.session.resolvePage(options.pageId);
+    const pageId = this.session.requirePageId(page);
+    const selector =
+      options.ref
+        ? this.session.resolveSelectorForRef(pageId, options.ref)
+        : options.selector;
+
+    if (!selector) {
+      throw new Error("selector 和 ref 至少要提供一个。");
+    }
+
+    return submitWithPlanWithRuntime(this.getRuntimeDeps(), {
+      ...options,
+      pageId,
+      selector,
+    });
   }
 
   public async evaluate(options: {

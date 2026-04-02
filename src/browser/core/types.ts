@@ -1,8 +1,51 @@
+export type PageState =
+  | "normal"
+  | "overlay_blocking"
+  | "blocked_by_verification"
+  | "auth_required";
+
+export type VerificationProviderHint =
+  | "cloudflare"
+  | "datadome"
+  | "perimeterx"
+  | "generic"
+  | "unknown";
+
+export interface VerificationBlockSummary {
+  providerHint: VerificationProviderHint;
+  evidence: string[];
+  recommendedAction:
+    | "wait_then_resume"
+    | "manual_resume"
+    | "allowlist"
+    | "use_existing_browser_session";
+}
+
+export interface OverlayBlockingSummary {
+  kind: "modal" | "banner" | "drawer" | "cookie_banner" | "unknown";
+  evidence: string[];
+  closeHints: string[];
+  recommendedAction: "auto_close_then_resume" | "manual_resume";
+}
+
+export interface AuthRequiredSummary {
+  kind: "login_gate" | "auth_page" | "unknown";
+  evidence: string[];
+  recommendedAction:
+    | "manual_login"
+    | "use_existing_browser_session"
+    | "change_entry";
+}
+
 export interface PageSummary {
   pageId: string;
   title: string;
   url: string;
   isCurrent: boolean;
+  pageState: PageState;
+  verification?: VerificationBlockSummary;
+  overlay?: OverlayBlockingSummary;
+  authRequired?: AuthRequiredSummary;
 }
 
 export interface BrowserStatus {
@@ -111,6 +154,38 @@ export interface RawFindElementsResult {
   >;
 }
 
+export interface PrimaryResultCandidate {
+  tag: string;
+  role?: string;
+  selector: string;
+  href?: string;
+  text?: string;
+  accessibleName?: string;
+  title?: string;
+  className?: string;
+  containerSelector?: string;
+  containerTextPreview?: string;
+  score: number;
+  scoreBreakdown: Array<{
+    reason: string;
+    score: number;
+  }>;
+}
+
+export interface FindPrimaryResultsResult {
+  page: PageSummary;
+  query?: string;
+  total: number;
+  results: Array<PrimaryResultCandidate & { ref: string }>;
+}
+
+export interface RawFindPrimaryResultsResult {
+  page: PageSummary;
+  query?: string;
+  total: number;
+  results: PrimaryResultCandidate[];
+}
+
 export interface PrimaryInputCandidate {
   index: number;
   tag: string;
@@ -157,13 +232,65 @@ export interface SubmitTargetCandidate {
   }>;
 }
 
+export interface SubmitPlanStep {
+  method: "enter" | "click";
+  confidence: number;
+  reasons: string[];
+  selector?: string;
+  tag?: string;
+  role?: string;
+  type?: string;
+  intent?: SubmitTargetCandidate["intent"];
+  text?: string;
+  accessibleName?: string;
+}
+
 export interface FindSubmitTargetsResult {
   page: PageSummary;
   inputSelector: string;
   preferredSubmitMethod: "enter" | "click" | "either";
   submitMethodReasons: string[];
+  submitPlan: SubmitPlanStep[];
   total: number;
   candidates: SubmitTargetCandidate[];
+}
+
+export interface MediaStateSummary {
+  tag: "video" | "audio";
+  selector: string;
+  currentSrc?: string;
+  src?: string;
+  currentTime: number;
+  duration: number;
+  paused: boolean;
+  ended: boolean;
+  muted: boolean;
+  volume: number;
+  playbackRate: number;
+  readyState: number;
+  networkState: number;
+  visible: boolean;
+  width: number;
+  height: number;
+  isPrimary: boolean;
+  score: number;
+  scoreBreakdown: Array<{
+    reason: string;
+    score: number;
+  }>;
+  errorCode?: number;
+}
+
+export interface ReadMediaStateResult {
+  page: PageSummary;
+  total: number;
+  media: Array<MediaStateSummary & { ref: string }>;
+}
+
+export interface RawReadMediaStateResult {
+  page: PageSummary;
+  total: number;
+  media: MediaStateSummary[];
 }
 
 export interface SubmitInputResult {
@@ -180,6 +307,76 @@ export interface SubmitInputResult {
     changed: boolean;
     note?: string;
   }>;
+}
+
+export interface SubmitWithPlanAttempt {
+  method: "enter" | "click";
+  confidence: number;
+  reasons: string[];
+  selector?: string;
+  changed: boolean;
+  pageSource?: "current" | "popup" | "new_target";
+  changeType?: ClickAndWaitChangeType;
+  successSignal?: ClickAndWaitSuccessSignal;
+  note?: string;
+}
+
+export interface SubmitWithPlanResult {
+  page: PageSummary;
+  inputSelector: string;
+  preferredSubmitMethod: "enter" | "click" | "either";
+  submitPlan: SubmitPlanStep[];
+  chosenMethod: "enter" | "click";
+  chosenSelector?: string;
+  before: {
+    title: string;
+    url: string;
+  };
+  after: {
+    title: string;
+    url: string;
+  };
+  changed: boolean;
+  pageSource: "current" | "popup" | "new_target";
+  changeType: ClickAndWaitChangeType;
+  successSignal: ClickAndWaitSuccessSignal;
+  observed: {
+    navigation: boolean;
+    selector: boolean;
+    title: boolean;
+    url: boolean;
+    contentSelector: boolean;
+    contentText: boolean;
+    dom: boolean;
+    stateChanged: boolean;
+    popup: boolean;
+    target: boolean;
+    pageCountChanged: boolean;
+  };
+  contentReady: boolean;
+  contentReadySignal: ContentReadySignal;
+  domObservation: DomObservationSummary;
+  attempts: SubmitWithPlanAttempt[];
+  note?: string;
+}
+
+export interface DismissBlockingOverlayAttempt {
+  selector: string;
+  text?: string;
+  accessibleName?: string;
+  score: number;
+  clicked: boolean;
+  note?: string;
+}
+
+export interface DismissBlockingOverlaysResult {
+  page: PageSummary;
+  beforePageState: PageState;
+  afterPageState: PageState;
+  dismissed: boolean;
+  attempts: DismissBlockingOverlayAttempt[];
+  totalCandidates: number;
+  note?: string;
 }
 
 export interface DomObservationSummary {

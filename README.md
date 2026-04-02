@@ -36,10 +36,10 @@
 
 - 浏览器管理：`browser_status`、`list_pages`、`open_page`、`select_page`、`close_page`、`close_browser`
 - 页面导航：`navigate`、`go_back`、`reload_page`
-- 页面理解：`page_snapshot`、`extract_text`（高级模式可额外启用 `evaluate`）
+- 页面理解：`page_snapshot`、`find_primary_results`、`extract_text`、`read_media_state`（高级模式可额外启用 `evaluate`）
 - 元素定位：`find_elements`
 - 同步等待：`wait_for`
-- 页面操作：`click`、`type_text`、`press_key`、`press_key_and_wait`（高级模式可额外启用 `submit_input`）
+- 页面操作：`dismiss_blocking_overlays`、`click`、`type_text`、`press_key`、`press_key_and_wait`（高级模式可额外启用 `submit_with_plan`、`submit_input`）
 - 结果留证：`screenshot`
 - 调试辅助：`console_logs`、`network_logs`
 
@@ -49,7 +49,7 @@
 
 - 主路工具：`page_snapshot`、`find_elements`、`click`、`type_text`、`click_and_wait`、`screenshot`
 - 辅助工具：`open_page`、`navigate`、`wait_for`、`list_pages`
-- 兜底工具：`find_primary_inputs`、`submit_input`、`evaluate`
+- 兜底工具：`find_primary_inputs`、`submit_with_plan`、`submit_input`、`evaluate`
 
 建议优先把主路工具走通，再考虑辅助或兜底工具。不要一开始就直接使用 `submit_input` 这类技术型工具。
 
@@ -71,9 +71,57 @@
 
 1. 先看页面，再找明确元素。
 2. 有明确输入框时，先 `click` 再 `type_text`。
-3. 搜索框、查询框这类输入提交时，优先考虑 `Enter` 或明确提交按钮，不要先用 `submit_input`。
+3. 搜索框、查询框这类输入提交时，优先考虑 `Enter` 或明确提交按钮；高级模式下可先看 `submitPlan`，再决定是否用 `submit_with_plan`，不要一开始就直接用 `submit_input`。
 4. 一次只做一个关键动作，动作后立刻回读页面状态。
 5. 只有主路径失败，才进入 `find_primary_inputs`、`submit_input`、`evaluate` 这些兜底工具。
+
+## 验证页识别
+
+这版 MCP 会在页面摘要里额外标记当前页面状态：
+
+- `pageState=normal`
+  说明：当前页面没有命中明显的人机验证/挑战页特征。
+
+- `pageState=blocked_by_verification`
+  说明：当前页面命中了明显的验证页或挑战页特征，例如 `Just a moment`、`Checking your browser`、`Client Challenge`、`Pardon Our Interruption`、`/challenge`、`/captcha`。
+
+- `pageState=auth_required`
+  说明：当前页面命中了明显的登录门槛或登录拦截层，例如整页登录墙、登录后查看更多、带密码输入框的登录浮层。这类页面不是普通可关闭弹窗，不应继续调用 `dismiss_blocking_overlays`。
+
+- `pageState=overlay_blocking`
+  说明：当前页面存在普通遮挡弹窗或浮层，例如 Cookie 横幅、下载引导、活动弹窗或可关闭的整页蒙层。这类页面默认优先尝试自动关闭，而不是直接归因到验证页。
+
+命中验证页时，返回结果里的 `page.verification` 会附带：
+
+- `providerHint`：例如 `cloudflare`、`generic`
+- `evidence`：命中的标题、URL、正文证据
+- `recommendedAction`：例如 `wait_then_resume`、`manual_resume`
+
+建议动作：
+
+1. 先保留当前浏览器会话，不要误判成输入框或点击链路失败。
+2. 如果是 `wait_then_resume`，先等待几秒，看站点是否自动放行。
+3. 如果等待后仍停留在验证页，再由人工在当前可见浏览器里完成验证。
+4. 验证通过后，继续用同一个 `pageId` / 当前会话往下执行，不需要重开浏览器。
+
+命中登录门槛时，返回结果里的 `page.authRequired` 会附带：
+
+- `kind`：例如 `login_gate`、`auth_page`
+- `evidence`：命中的标题、正文、可见输入框等证据
+- `recommendedAction`：例如 `manual_login`、`use_existing_browser_session`
+
+建议动作：
+
+1. 不要把它当成普通可关闭弹窗。
+2. 如果是 `use_existing_browser_session`，优先复用已登录浏览器会话，或人工完成登录后继续当前页面。
+3. 如果是 `manual_login`，先使用测试账号登录，再继续当前会话。
+
+命中普通遮挡层时，返回结果里的 `page.overlay` 会附带：
+
+- `kind`：例如 `modal`、`banner`、`drawer`、`cookie_banner`
+- `evidence`：命中的遮挡层证据
+- `closeHints`：当前更像关闭控件的提示
+- `recommendedAction=auto_close_then_resume`
 
 ## 推荐工作流
 
@@ -84,19 +132,21 @@
 3. `find_elements` 找出明确的输入框、按钮或链接，并拿到对应 `ref`
 4. `click` 点击输入框或目标元素，优先传 `ref`
 5. `type_text` 输入文本，优先传 `ref`
-6. 搜索框、查询框场景下，可先用 `find_submit_targets` 查看 `preferredSubmitMethod`
-7. `preferredSubmitMethod=enter` 时，优先用 `press_key_and_wait(key=Enter)`
-8. 页面本身有明确提交按钮，或 `preferredSubmitMethod=click` 时，再用 `click_and_wait`
-9. 如果页面是“URL 先变、内容后到”，在第 7 或第 8 步同时传 `waitForUrl` 和 `contentReadySelector` / `contentReadyText`
-10. `page_snapshot` 或 `list_pages` 回读当前页面状态
-11. `screenshot` 留证，必要时再看 `console_logs` / `network_logs`
+6. 搜索框、查询框场景下，可先用 `find_submit_targets` 查看 `submitPlan`
+7. `submitPlan[0]` 是当前推荐的首选提交动作；如果是 `enter`，优先用 `press_key_and_wait(key=Enter)`
+8. 如果 `submitPlan[0]` 是 `click`，或首选动作失败，就按计划里的下一个动作继续尝试，通常是 `click_and_wait`
+9. `preferredSubmitMethod` 仍然保留作兼容字段，但后续建议优先看 `submitPlan`
+10. 如果页面是“URL 先变、内容后到”，在第 7 或第 8 步同时传 `waitForUrl` 和 `contentReadySelector` / `contentReadyText`
+11. `page_snapshot` 或 `list_pages` 回读当前页面状态
+12. `screenshot` 留证，必要时再看 `console_logs` / `network_logs`
 
 如果你显式开启了 `advanced` 模式，而第 3 到第 6 步仍然不够，再按这个顺序补兜底：
 
 1. `wait_for`
 2. `find_primary_inputs`
-3. `submit_input`
-4. `evaluate`
+3. `submit_with_plan`
+4. `submit_input`
+5. `evaluate`
 
 这套方式比“全文文本匹配 + 手写选择器”更稳，也更接近成熟浏览器自动化工具的推荐实践。
 
@@ -161,15 +211,47 @@
   适合作为兜底或诊断工具，定位页面没有明确“搜索”字样时的导航区或顶部主输入框。
 
 - `find_submit_targets`
-  说明：围绕指定输入框扫描附近可能承担提交动作的控件，并返回 `preferredSubmitMethod`，用于判断当前更适合优先按 `Enter`，还是优先点击邻近提交控件。
+  说明：围绕指定输入框扫描附近可能承担提交动作的控件，并返回 `submitPlan`。`submitPlan` 是按顺序排好的提交方案，第一项是首选动作，后续项是失败后的后备动作；同时仍保留 `preferredSubmitMethod` 作为兼容字段。
+
+- `find_primary_results`
+  说明：在主内容区域里提取更像“结果卡片/主结果列表”的链接，适合商品列表、视频列表、搜索结果页这类噪音较多的页面。可选传 `query`，把更相关的结果排到前面。
+  适用场景：
+  - 电商结果页里先拿主商品卡片，再决定点哪一条
+  - 视频/文章结果列表里，优先锁定真正结果，而不是页头、筛选器、推荐链接
+  - `page_snapshot` 返回的交互元素被导航或筛选控件噪音挤占时，单独补一轮主结果提取
 
 - `extract_text`
   说明：提取整个页面或某个元素的文本内容。优先传 `ref`；也支持 `selector`。
+  常用参数：
+  - `ref`
+  - `selector`
+  - `mode`：未传 `ref/selector` 时的提取范围。`auto` 默认优先正文，`main` 优先主内容区，`article` 优先文章正文，`body` 为整页
+  - `maxLength`
+
+- `read_media_state`
+  说明：读取页面里的 `video/audio` 元素状态，适合验证“真的开始播放了”，而不是只看按钮文案。
+  常用返回：
+  - `currentTime`：当前播放时间
+  - `paused`：是否暂停
+  - `duration`：总时长
+  - `visible`：媒体元素是否可见
+  - `isPrimary`：当前最像主媒体的元素
+  适用场景：
+  - 视频详情页验证是否真正进入播放态
+  - 页面上有多个媒体元素时，优先看主媒体状态
+  - 排查“按钮看起来点了，但视频其实没开始”这类问题
 
 - `evaluate`
   说明：高级模式。在页面上下文里执行一段 JavaScript 表达式并返回结果。
 
 ### 页面操作
+
+- `dismiss_blocking_overlays`
+  说明：尝试关闭当前页面上的普通遮挡弹窗或遮罩层，只处理高置信的“关闭/跳过/稍后/取消/知道了”这类控件，不默认点击“同意/允许”按钮。
+  适用场景：
+  - 登录提示挡住了主内容
+  - Cookie 横幅挡住了按钮或输入框
+  - 下载客户端、App 引导、活动弹窗挡住了页面
 
 - `click`
   说明：模拟用户点击页面中的明确元素。优先传 `page_snapshot` 或 `find_elements` 返回的 `ref`；也支持 Puppeteer locator 风格的 selector。
@@ -178,6 +260,7 @@
   说明：先注册等待条件再点击，适合点击明确按钮、链接或标签后，会发生同页跳转、弹出新页、改标题、改 URL 或刷新局部内容的场景。优先传 `ref`。
   判定规则：默认要求命中“强信号”（例如 `waitForSelector` 命中、显式 URL/标题条件命中、popup/new_target）；仅有弱变化不会判成功，避免误判。默认不强等导航，只有明确会跳页时再传 `waitForNavigation=true`。
   两阶段等待：如果是“路由先变化、内容区稍后才就绪”的页面，可额外传 `contentReadySelector` 或 `contentReadyText`。这时工具会先确认跳转/变化，再继续等待内容区真正可见。
+  可恢复等待：如果点击后正好遇到结果列表重排、页面执行上下文切换这类瞬时错误（例如 `detached frame`），会先继续观察页面真实变化，再决定是否判失败，而不是立刻把动作记成失败。
   返回重点：
   - `changeType`：本次变化类型，例如 `same_page_update`、`navigation`、`popup`、`new_target`
   - `successSignal`：本次到底是靠什么信号判成功，例如 `selector`、`url`、`title`、`popup`
@@ -222,6 +305,26 @@
   - `contentReadyTextSelector`
   - `contentReadyTimeoutMs`
   - `matchMode`
+
+- `submit_with_plan`
+  说明：高级模式。先围绕输入框生成 `submitPlan`，再按顺序执行。第 1 步通常是 `enter` 或明确提交按钮点击；如果首选动作失败，会自动切到计划里的后备动作。只使用像人一样的提交方式，不使用 `form.submit()`。
+  适用场景：
+  - 搜索框、查询框
+  - 已经锁定输入框，但不确定当前站点应先按 `Enter` 还是先点按钮
+  - 希望把“首选提交动作 + 后备动作”固定下来，而不是临时自己切换
+  常用参数：
+  - `ref` 或 `selector`
+  - `waitForUrl`
+  - `waitForSelector`
+  - `contentReadySelector`
+  - `contentReadyText`
+  - `maxPlanSteps`
+  返回重点：
+  - `submitPlan`：本次执行时参考的提交计划
+  - `chosenMethod`：最终成功使用的是 `enter` 还是 `click`
+  - `chosenSelector`：如果成功动作是点击，这里会返回对应按钮选择器
+  - `attempts`：每一步计划的尝试记录和失败原因
+  - `changeType`、`successSignal`、`contentReady`：与 `click_and_wait` 保持一致的结果判定字段
 
 - `submit_input`
   说明：高级模式下的兜底工具。对指定输入框按多种策略尝试提交，适合页面没有明确提交按钮，或需要排查表单提交流程时做验证。

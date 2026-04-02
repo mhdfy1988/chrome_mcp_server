@@ -28,6 +28,10 @@ export function registerInspectionTools(
             .string()
             .optional()
             .describe("可选，只提取某个元素选择器对应的文本。"),
+          mode: z
+            .enum(["auto", "main", "article", "body"])
+            .default("auto")
+            .describe("未传 ref/selector 时的提取范围：auto 优先正文，main 优先主内容，article 优先文章区，body 为整页。"),
           maxLength: z
             .number()
             .int()
@@ -49,12 +53,13 @@ export function registerInspectionTools(
         readOnlyHint: true,
       },
     },
-    async ({ pageId, ref, selector, maxLength }) =>
+    async ({ pageId, ref, selector, mode, maxLength }) =>
       textResult(
         await browserManager.extractText({
           pageId,
           ref,
           selector,
+          mode,
           maxLength,
         }),
       ),
@@ -151,7 +156,7 @@ export function registerInspectionTools(
     "find_submit_targets",
     {
       description:
-        "围绕指定输入框扫描附近可能承担提交动作的控件，适合搜索框、筛选框或表单输入框场景。会额外返回 preferredSubmitMethod，用于判断当前更适合优先按 Enter，还是优先点击邻近提交控件。优先传 ref；也支持 selector。",
+        "围绕指定输入框扫描附近可能承担提交动作的控件，适合搜索框、筛选框或表单输入框场景。会额外返回 submitPlan 和 preferredSubmitMethod，用于判断当前更适合优先按 Enter，还是优先点击邻近提交控件。优先传 ref；也支持 selector。",
       inputSchema: z
         .object({
           pageId: z.string().optional().describe("可选，指定页面 ID。"),
@@ -191,6 +196,74 @@ export function registerInspectionTools(
         await browserManager.findSubmitTargets({
           pageId,
           ref,
+          selector,
+          maxResults,
+        }),
+      ),
+  );
+
+  server.registerTool(
+    "find_primary_results",
+    {
+      description:
+        "在主内容区域里提取更像“结果卡片/主结果列表”的链接，适合商品列表、视频列表、搜索结果页等噪音较多的页面。可选传 query 提升目标结果排序。",
+      inputSchema: z.object({
+        pageId: z.string().optional().describe("可选，指定页面 ID。"),
+        query: z
+          .string()
+          .optional()
+          .describe("可选，目标结果关键词，用于提升更相关的主结果排序。"),
+        maxResults: z
+          .number()
+          .int()
+          .positive()
+          .max(30)
+          .default(10)
+          .describe("最多返回多少条主结果。"),
+      }),
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+      },
+    },
+    async ({ pageId, query, maxResults }) =>
+      textResult(
+        await browserManager.findPrimaryResults({
+          pageId,
+          query,
+          maxResults,
+        }),
+      ),
+  );
+
+  server.registerTool(
+    "read_media_state",
+    {
+      description:
+        "读取当前页面里 video/audio 元素的播放状态，适合验证视频是否真的开始播放，而不是只看按钮文案。",
+      inputSchema: z.object({
+        pageId: z.string().optional().describe("可选，指定页面 ID。"),
+        selector: z
+          .string()
+          .optional()
+          .describe("可选，只在某个容器范围内查找媒体元素。"),
+        maxResults: z
+          .number()
+          .int()
+          .positive()
+          .max(20)
+          .default(5)
+          .describe("最多返回多少个媒体元素状态。"),
+      }),
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+      },
+    },
+    async ({ pageId, selector, maxResults }) =>
+      textResult(
+        await browserManager.readMediaState({
+          pageId,
           selector,
           maxResults,
         }),

@@ -9,6 +9,7 @@ export async function extractTextWithInspection(
     pageId?: string;
     ref?: string;
     selector?: string;
+    mode?: "auto" | "main" | "article" | "body";
     maxLength: number;
   },
 ): Promise<{ page: PageSummary; text: string }> {
@@ -32,7 +33,47 @@ export async function extractTextWithInspection(
     rawText = await readTextFromHandle(handle);
     await handle.dispose();
   } else {
-    rawText = await page.evaluate(() => document.body?.innerText ?? "");
+    rawText = await page.evaluate((mode) => {
+      const pickRoot = () => {
+        if (mode === "body") {
+          return document.body;
+        }
+
+        if (mode === "article") {
+          return (
+            document.querySelector("article") ??
+            document.querySelector("[itemprop='articleBody']") ??
+            document.querySelector("main") ??
+            document.querySelector("[role='main']") ??
+            document.body
+          );
+        }
+
+        if (mode === "main") {
+          return (
+            document.querySelector("main") ??
+            document.querySelector("[role='main']") ??
+            document.querySelector("#main") ??
+            document.querySelector("#mainContent") ??
+            document.querySelector("#content") ??
+            document.body
+          );
+        }
+
+        return (
+          document.querySelector("article") ??
+          document.querySelector("[itemprop='articleBody']") ??
+          document.querySelector("main") ??
+          document.querySelector("[role='main']") ??
+          document.querySelector("#mainContent") ??
+          document.querySelector("#content") ??
+          document.body
+        );
+      };
+
+      const root = pickRoot();
+      return (root as HTMLElement | null)?.innerText ?? document.body?.innerText ?? "";
+    }, options.mode ?? "auto");
   }
 
   return {

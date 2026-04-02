@@ -13,6 +13,39 @@ export function registerInteractionTools(
   },
 ): void {
   server.registerTool(
+    "dismiss_blocking_overlays",
+    {
+      description:
+        "尝试关闭当前页面上的普通遮挡弹窗或遮罩层，只处理高置信的“关闭/跳过/稍后/取消/知道了”这类控件，不默认点击同意按钮。",
+      inputSchema: z.object({
+        pageId: z.string().optional().describe("可选，指定页面 ID。"),
+        timeoutMs: z
+          .number()
+          .int()
+          .positive()
+          .max(120000)
+          .optional()
+          .describe("可选，单次关闭动作的等待超时时间。"),
+        maxSteps: z
+          .number()
+          .int()
+          .positive()
+          .max(10)
+          .default(3)
+          .describe("最多尝试关闭多少个候选控件。"),
+      }),
+    },
+    async ({ pageId, timeoutMs, maxSteps }) =>
+      textResult(
+        await browserManager.dismissBlockingOverlays({
+          pageId,
+          timeoutMs,
+          maxSteps,
+        }),
+      ),
+  );
+
+  server.registerTool(
     "click",
     {
       description:
@@ -337,6 +370,128 @@ export function registerInteractionTools(
   );
 
   if (options.toolMode === "advanced") {
+    server.registerTool(
+      "submit_with_plan",
+      {
+        description:
+          "高级模式。先调用 find_submit_targets 生成提交计划，再按 submitPlan 顺序依次尝试。只使用 Enter 和明确提交按钮点击这两类像人一样的动作，不使用 form.submit()。适合搜索框、查询框这类需要先试首选提交动作、失败后再切后备动作的场景。",
+        inputSchema: z
+          .object({
+            pageId: z.string().optional().describe("可选，指定页面 ID。"),
+            ref: z
+              .string()
+              .min(1)
+              .optional()
+              .describe("可选，来自 page_snapshot 或 find_elements 的输入框引用。"),
+            selector: z
+              .string()
+              .min(1)
+              .optional()
+              .describe("可选，要提交的输入框选择器。"),
+            timeoutMs: z
+              .number()
+              .int()
+              .positive()
+              .max(120000)
+              .optional()
+              .describe("执行计划时单步动作和等待共用的超时时间。"),
+            waitForNavigation: z
+              .boolean()
+              .optional()
+              .describe("可选，是否强制在提交前先注册导航等待；默认按成功信号判断。"),
+            waitUntil: waitUntilSchema
+              .default("domcontentloaded")
+              .describe("导航等待条件。"),
+            waitForSelector: z
+              .string()
+              .optional()
+              .describe("可选，提交后等待某个选择器出现。"),
+            waitForTitle: z
+              .string()
+              .optional()
+              .describe("可选，提交后等待标题满足条件。"),
+            waitForUrl: z
+              .string()
+              .optional()
+              .describe("可选，提交后等待 URL 满足条件。"),
+            contentReadySelector: z
+              .string()
+              .optional()
+              .describe("可选，路由或页面变化后，再等待某个内容选择器出现。"),
+            contentReadyText: z
+              .string()
+              .optional()
+              .describe("可选，路由或页面变化后，再等待某段内容文本出现。"),
+            contentReadyTextSelector: z
+              .string()
+              .optional()
+              .describe("可选，仅在某个元素范围内等待 contentReadyText。"),
+            contentReadyTimeoutMs: z
+              .number()
+              .int()
+              .positive()
+              .max(120000)
+              .optional()
+              .describe("可选，内容就绪阶段的单独超时时间；不传时默认跟随 timeoutMs。"),
+            matchMode: waitMatchModeSchema
+              .default("contains")
+              .describe("标题和 URL 的匹配方式，支持 contains 或 exact。"),
+            maxPlanSteps: z
+              .number()
+              .int()
+              .positive()
+              .max(10)
+              .optional()
+              .describe("可选，最多执行多少个提交计划步骤。"),
+          })
+          .superRefine((value, context) => {
+            if (!value.ref && !value.selector) {
+              context.addIssue({
+                code: "custom",
+                message: "ref 和 selector 至少要提供一个。",
+                path: ["ref"],
+              });
+            }
+          }),
+      },
+      async ({
+        pageId,
+        ref,
+        selector,
+        timeoutMs,
+        waitForNavigation,
+        waitUntil,
+        waitForSelector,
+        waitForTitle,
+        waitForUrl,
+        contentReadySelector,
+        contentReadyText,
+        contentReadyTextSelector,
+        contentReadyTimeoutMs,
+        matchMode,
+        maxPlanSteps,
+      }) =>
+        textResult(
+          await browserManager.submitWithPlan({
+            pageId,
+            ref,
+            selector,
+            timeoutMs,
+            waitForNavigation,
+            waitUntil: waitUntil as WaitUntilMode,
+            waitForSelector,
+            waitForTitle,
+            waitForUrl,
+            contentReadySelector,
+            contentReadyText,
+            contentReadyTextSelector,
+            contentReadyTimeoutMs,
+            matchMode,
+            maxPlanSteps,
+          }),
+        ),
+    );
+
     server.registerTool(
       "submit_input",
       {

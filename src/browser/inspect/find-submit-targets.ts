@@ -19,6 +19,9 @@ export async function findSubmitTargetsWithInspection(
       const input = document.querySelector(args.selector);
       if (!(input instanceof HTMLElement) || !helpers.isVisible(input)) {
         return {
+          preferredSubmitMethod: "either" as const,
+          submitMethodReasons: [],
+          submitPlan: [],
           total: 0,
           candidates: [],
         };
@@ -151,17 +154,18 @@ export async function findSubmitTargetsWithInspection(
           ? normalizeWhitespace(input.type)
           : "";
       const inputHaystack = collectHaystack(input);
-      const submitMethodReasons: string[] = [];
+      const enterReasons: string[] = [];
+      const clickReasons: string[] = [];
       let enterScore = 0;
       let clickScore = 0;
 
       const addEnterReason = (reason: string, score: number) => {
-        submitMethodReasons.push(`enter:${reason}`);
+        enterReasons.push(reason);
         enterScore += score;
       };
 
       const addClickReason = (reason: string, score: number) => {
-        submitMethodReasons.push(`click:${reason}`);
+        clickReasons.push(reason);
         clickScore += score;
       };
 
@@ -194,16 +198,23 @@ export async function findSubmitTargetsWithInspection(
         addClickReason("multiline-input", 6);
       }
 
-      const preferredSubmitMethod =
-        enterScore >= clickScore + 2
-          ? "enter"
-          : clickScore >= enterScore + 2
-            ? "click"
-            : "either";
-
       type CandidateSummary = FindSubmitTargetsResult["candidates"][number];
+      type SubmitPlanStep = FindSubmitTargetsResult["submitPlan"][number];
+      type CandidateAnalysis = {
+        summary: CandidateSummary;
+        clickEligible: boolean;
+      };
 
-      const candidates = Array.from(scope.querySelectorAll("*"))
+      const toConfidence = (score: number, scale: number) => {
+        if (score <= 0) {
+          return 0;
+        }
+
+        const normalized = Math.max(0.05, Math.min(0.99, score / scale));
+        return Math.round(normalized * 100) / 100;
+      };
+
+      const candidateAnalyses = Array.from(scope.querySelectorAll("*"))
         .filter((candidate) => candidate !== input)
         .filter((candidate) => candidate instanceof HTMLElement)
         .filter((candidate) => helpers.isVisible(candidate))
@@ -311,15 +322,114 @@ export async function findSubmitTargetsWithInspection(
             intentReasons: intent.reasons,
             scoreBreakdown,
           };
-          return candidateSummary;
+          return {
+            summary: candidateSummary,
+            clickEligible: hasButtonSemantics,
+          };
         })
-        .filter((candidate): candidate is CandidateSummary => candidate !== null)
-        .sort((left, right) => right.score - left.score)
+        .filter((candidate): candidate is CandidateAnalysis => candidate !== null)
+        .sort((left, right) => right.summary.score - left.summary.score)
         .slice(0, args.maxResults);
+
+      const candidates = candidateAnalyses.map((candidate) => candidate.summary);
+
+      const topClickCandidate =
+        candidateAnalyses.find(
+          (candidate) =>
+            candidate.clickEligible && candidate.summary.intent === "submit",
+        ) ?? null;
+
+      if (topClickCandidate) {
+        addClickReason("explicit-submit-candidate", 4);
+
+        if (
+          topClickCandidate.summary.tag === "button" ||
+          topClickCandidate.summary.type === "submit" ||
+          topClickCandidate.summary.type === "button" ||
+          topClickCandidate.summary.type === "image"
+        ) {
+          addClickReason("native-submit-control", 4);
+        }
+
+        if (topClickCandidate.summary.role === "button") {
+          addClickReason("button-role", 2);
+        }
+
+        const topCandidateHaystack = [
+          topClickCandidate.summary.text,
+          topClickCandidate.summary.accessibleName,
+          topClickCandidate.summary.title,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLocaleLowerCase();
+
+        if (
+          hasAnyKeyword(topCandidateHaystack, [
+            "search",
+            "submit",
+            "query",
+            "go",
+            "apply",
+            "filter",
+            "搜索",
+            "查找",
+            "检索",
+            "提交",
+            "筛选",
+          ])
+        ) {
+          addClickReason("explicit-submit-label", 4);
+        }
+
+        if (topClickCandidate.summary.score >= 45) {
+          addClickReason("high-confidence-candidate", 4);
+        }
+      }
+
+      const submitPlan: SubmitPlanStep[] = [];
+      if (enterScore > 0) {
+        submitPlan.push({
+          method: "enter",
+          confidence: toConfidence(enterScore, 16),
+          reasons: enterReasons,
+        });
+      }
+
+      if (topClickCandidate && clickScore > 0) {
+        submitPlan.push({
+          method: "click",
+          confidence: toConfidence(clickScore, 18),
+          reasons: clickReasons,
+          selector: topClickCandidate.summary.selector,
+          tag: topClickCandidate.summary.tag,
+          role: topClickCandidate.summary.role,
+          type: topClickCandidate.summary.type,
+          intent: topClickCandidate.summary.intent,
+          text: topClickCandidate.summary.text,
+          accessibleName: topClickCandidate.summary.accessibleName,
+        });
+      }
+
+      submitPlan.sort((left, right) => right.confidence - left.confidence);
+
+      const preferredSubmitMethod =
+        submitPlan.length === 0
+          ? "either"
+          : submitPlan.length === 1
+            ? submitPlan[0]!.method
+            : submitPlan[0]!.confidence >= submitPlan[1]!.confidence + 0.08
+              ? submitPlan[0]!.method
+              : "either";
+
+      const submitMethodReasons = submitPlan.flatMap((step) =>
+        step.reasons.map((reason) => `${step.method}:${reason}`),
+      );
 
       return {
         preferredSubmitMethod,
         submitMethodReasons,
+        submitPlan,
         total: candidates.length,
         candidates,
       };
@@ -336,6 +446,7 @@ export async function findSubmitTargetsWithInspection(
     preferredSubmitMethod:
       (result.preferredSubmitMethod ?? "either") as FindSubmitTargetsResult["preferredSubmitMethod"],
     submitMethodReasons: result.submitMethodReasons ?? [],
+    submitPlan: result.submitPlan ?? [],
     total: result.total,
     candidates: result.candidates,
   };

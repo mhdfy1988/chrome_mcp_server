@@ -11,6 +11,7 @@ import type {
   PageSummary,
   SnapshotElementSummary,
 } from "./types.js";
+import { readPageState } from "./page-state.js";
 
 const MAX_LOG_ENTRIES = 200;
 
@@ -388,11 +389,16 @@ export class BrowserSession {
 
   public async summarizePage(pageId: string, page: Page): Promise<PageSummary> {
     const title = await page.title().catch(() => "");
+    const pageState = await readPageState(page);
     return {
       pageId,
       title,
       url: page.url(),
       isCurrent: this.currentPageId === pageId,
+      pageState: pageState.pageState,
+      verification: pageState.verification,
+      overlay: pageState.overlay,
+      authRequired: pageState.authRequired,
     };
   }
 

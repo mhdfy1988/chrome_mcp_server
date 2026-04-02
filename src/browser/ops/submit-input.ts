@@ -1,6 +1,21 @@
-﻿import type { BrowserRuntimeDeps } from "../core/runtime-deps.js";
-import type { SubmitInputResult } from "../core/types.js";
-import { observeAction } from "../flow/action-observer.js";
+import type { WaitUntilMode } from "../../config.js";
+import type { BrowserInspectionDeps } from "../core/inspection-deps.js";
+import type { BrowserRuntimeDeps } from "../core/runtime-deps.js";
+import { findSubmitTargetsWithInspection } from "../inspect/find-submit-targets.js";
+import type {
+  ClickAndWaitSuccessSignal,
+  SubmitInputResult,
+  SubmitWithPlanResult,
+  WaitMatchMode,
+} from "../core/types.js";
+import {
+  collectActionFailureReasons,
+  determineActionChangeType,
+  determineActionSuccessSignal,
+  evaluateActionVerification,
+  observeAction,
+  type ActionVerificationRule,
+} from "../flow/action-observer.js";
 
 export async function submitInputWithRuntime(
   deps: BrowserRuntimeDeps,
@@ -248,3 +263,237 @@ export async function submitInputWithRuntime(
   };
 }
 
+export async function submitWithPlanWithRuntime(
+  deps: BrowserRuntimeDeps,
+  options: {
+    selector: string;
+    pageId?: string;
+    timeoutMs?: number;
+    waitForNavigation?: boolean;
+    waitUntil?: WaitUntilMode;
+    waitForSelector?: string;
+    waitForTitle?: string;
+    waitForUrl?: string;
+    contentReadySelector?: string;
+    contentReadyText?: string;
+    contentReadyTextSelector?: string;
+    contentReadyTimeoutMs?: number;
+    matchMode?: WaitMatchMode;
+    maxPlanSteps?: number;
+  },
+): Promise<SubmitWithPlanResult> {
+  let page = await deps.resolvePage(options.pageId);
+  const timeoutMs = options.timeoutMs ?? deps.config.stepTimeoutMs;
+  const inputLocator = page.locator(options.selector).setTimeout(timeoutMs);
+
+  await inputLocator.wait();
+
+  const submitTargets = await findSubmitTargetsWithInspection(
+    createInspectionDepsFromRuntime(deps),
+    {
+      pageId: deps.requirePageId(page),
+      selector: options.selector,
+      maxResults: Math.max(options.maxPlanSteps ?? 5, 5),
+    },
+  );
+  const submitPlan = submitTargets.submitPlan.slice(
+    0,
+    options.maxPlanSteps ?? submitTargets.submitPlan.length,
+  );
+
+  if (submitPlan.length === 0) {
+    throw new Error("当前输入框未生成可执行的提交计划。");
+  }
+
+  const verifications = buildSubmitPlanVerifications(options);
+  const shouldWaitForNavigation = options.waitForNavigation ?? false;
+  const actionWaitOptions = {
+    timeoutMs: options.timeoutMs,
+    waitForNavigation: shouldWaitForNavigation,
+    waitUntil: options.waitUntil,
+    waitForSelector: options.waitForSelector,
+    waitForTitle: options.waitForTitle,
+    waitForUrl: options.waitForUrl,
+    contentReadySelector: options.contentReadySelector,
+    contentReadyText: options.contentReadyText,
+    contentReadyTextSelector: options.contentReadyTextSelector,
+    contentReadyTimeoutMs: options.contentReadyTimeoutMs,
+    matchMode: options.matchMode,
+    observeDom: true,
+  } as const;
+  const attempts: SubmitWithPlanResult["attempts"] = [];
+
+  for (const step of submitPlan) {
+    try {
+      const observation = await observeAction(
+        deps,
+        page,
+        async () => {
+          if (step.method === "enter") {
+            const currentInput = page.locator(options.selector).setTimeout(timeoutMs);
+            await currentInput.wait();
+            await currentInput.click();
+            await page.keyboard.press("Enter");
+            return;
+          }
+
+          if (!step.selector) {
+            throw new Error("点击方案缺少 selector。");
+          }
+
+          await page.locator(step.selector).setTimeout(timeoutMs).click();
+        },
+        actionWaitOptions,
+      );
+
+      const verification = await evaluateActionVerification(observation, {
+        verifications,
+        requireObservedChange: true,
+        requireStrongObservedChange: true,
+      });
+      const successSignal = determineActionSuccessSignal(
+        observation,
+        actionWaitOptions,
+      );
+
+      attempts.push({
+        method: step.method,
+        confidence: step.confidence,
+        reasons: step.reasons,
+        selector: step.selector,
+        changed: observation.changed,
+        pageSource: observation.pageSource,
+        changeType: determineActionChangeType(observation),
+        successSignal,
+        note: verification.passed
+          ? observation.note
+          : (await collectActionFailureReasons(observation, verification.reports, {
+              requireObservedChange: true,
+              requireStrongObservedChange: true,
+              contentReadySelector: options.contentReadySelector,
+              contentReadyText: options.contentReadyText,
+            })).join(" | "),
+      });
+
+      page = observation.finalPage;
+
+      if (!verification.passed) {
+        continue;
+      }
+
+      return {
+        page: await deps.summarizePage(
+          deps.requirePageId(observation.finalPage),
+          observation.finalPage,
+        ),
+        inputSelector: options.selector,
+        preferredSubmitMethod: submitTargets.preferredSubmitMethod,
+        submitPlan,
+        chosenMethod: step.method,
+        chosenSelector: step.selector,
+        before: observation.before,
+        after: observation.after,
+        changed: observation.changed,
+        pageSource: observation.pageSource,
+        changeType: determineActionChangeType(observation),
+        successSignal,
+        observed: observation.observed,
+        contentReady: observation.contentReady,
+        contentReadySignal: observation.contentReadySignal,
+        domObservation: observation.domObservation,
+        attempts,
+        note:
+          attempts.length > 1
+            ? `已按提交计划尝试 ${attempts.length} 步。`
+            : observation.note,
+      };
+    } catch (error) {
+      attempts.push({
+        method: step.method,
+        confidence: step.confidence,
+        reasons: step.reasons,
+        selector: step.selector,
+        changed: false,
+        successSignal: "none" as ClickAndWaitSuccessSignal,
+        note: error instanceof Error ? error.message : String(error),
+      });
+      page = await deps.resolvePage(deps.getCurrentPageId());
+    }
+  }
+
+  throw new Error(
+    `按提交计划尝试后仍未成功：${attempts
+      .map((attempt) => {
+        const target = attempt.selector ? `(${attempt.selector})` : "";
+        const note = attempt.note ? ` ${attempt.note}` : "";
+        return `${attempt.method}${target}${note}`;
+      })
+      .join(" | ")}`,
+  );
+}
+
+function buildSubmitPlanVerifications(options: {
+  waitForSelector?: string;
+  waitForTitle?: string;
+  waitForUrl?: string;
+  contentReadySelector?: string;
+  contentReadyText?: string;
+  contentReadyTextSelector?: string;
+  matchMode?: WaitMatchMode;
+}): ActionVerificationRule[] {
+  const verifications: ActionVerificationRule[] = [];
+
+  if (options.waitForUrl) {
+    verifications.push({
+      kind: "url",
+      expected: options.waitForUrl,
+      matchMode: options.matchMode,
+    });
+  }
+
+  if (options.waitForTitle) {
+    verifications.push({
+      kind: "title",
+      expected: options.waitForTitle,
+      matchMode: options.matchMode,
+    });
+  }
+
+  if (options.waitForSelector) {
+    verifications.push({
+      kind: "selectorVisible",
+      selector: options.waitForSelector,
+    });
+  }
+
+  if (options.contentReadySelector) {
+    verifications.push({
+      kind: "contentSelectorVisible",
+      selector: options.contentReadySelector,
+    });
+  }
+
+  if (options.contentReadyText) {
+    verifications.push({
+      kind: "contentText",
+      text: options.contentReadyText,
+      textSelector: options.contentReadyTextSelector,
+      matchMode: options.matchMode,
+    });
+  }
+
+  return verifications;
+}
+
+function createInspectionDepsFromRuntime(
+  deps: BrowserRuntimeDeps,
+): BrowserInspectionDeps {
+  return {
+    defaultTimeoutMs: deps.config.defaultTimeoutMs,
+    resolvePage: (pageId) => deps.resolvePage(pageId),
+    requirePageId: (page) => deps.requirePageId(page),
+    summarizePage: (pageId, page) => deps.summarizePage(pageId, page),
+    resolveSelectorForRef: (pageId, ref) =>
+      deps.resolveSelectorForRef(pageId, ref),
+  };
+}
