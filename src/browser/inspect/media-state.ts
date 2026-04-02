@@ -16,6 +16,10 @@ export async function readMediaStateWithInspection(
   const result = await evaluateWithDomHelpers(
     page,
     (helpers, args) => {
+      const normalize = (value: unknown) =>
+        helpers.normalizeWhitespace(value).toLocaleLowerCase();
+      const toConfidence = (score: number, maxScore: number) =>
+        Number(Math.max(0.05, Math.min(0.99, score / maxScore)).toFixed(2));
       const scope = args.selector
         ? document.querySelector(args.selector)
         : document.body;
@@ -97,12 +101,142 @@ export async function readMediaStateWithInspection(
         .sort((left, right) => right.score - left.score)
         .slice(0, args.maxResults);
 
+      const playMediaPlan: RawReadMediaStateResult["playMediaPlan"] = [];
       if (mediaElements.length > 0) {
         mediaElements[0]!.isPrimary = true;
+
+        const primaryMedia = mediaElements[0]!;
+        const primaryElement = scope.querySelector(primaryMedia.selector);
+
+        if (!primaryMedia.paused && primaryMedia.currentTime > 0) {
+          playMediaPlan.push({
+            method: "already_playing",
+            confidence: 0.99,
+            reasons: ["主媒体已在播放，无需额外点击"],
+            selector: primaryMedia.selector,
+          });
+        }
+
+        playMediaPlan.push({
+          method: "click_media_surface",
+          confidence: toConfidence(
+            primaryMedia.score + (primaryMedia.paused ? 18 : 6),
+            60,
+          ),
+          reasons: [
+            primaryMedia.tag === "video"
+              ? "优先点击主视频区域，最接近真人播放动作"
+              : "优先点击主音频区域，尝试恢复播放",
+          ],
+          selector: primaryMedia.selector,
+        });
+
+        if (primaryElement instanceof HTMLElement) {
+          const primaryRect = primaryElement.getBoundingClientRect();
+          const playerRoot =
+            primaryElement.closest(
+              [
+                "[class*='player']",
+                "[class*='video']",
+                "[class*='media']",
+                "[data-testid*='player']",
+                "[role='application']",
+              ].join(", "),
+            ) ??
+            primaryElement.parentElement ??
+            scope;
+
+          const playButtons = Array.from(
+            playerRoot.querySelectorAll(
+              "button, [role='button'], input[type='button'], div, span",
+            ),
+          )
+            .filter((element): element is HTMLElement => element instanceof HTMLElement)
+            .filter((element) => helpers.isVisible(element))
+            .map((element) => {
+              const rect = element.getBoundingClientRect();
+              const label = normalize(
+                [
+                  helpers.findAccessibleName(element),
+                  element.getAttribute("aria-label"),
+                  element.getAttribute("title"),
+                  element.getAttribute("class"),
+                  element.innerText ?? element.textContent ?? "",
+                ].join(" "),
+              );
+
+              const scoreBreakdown: Array<{ reason: string; score: number }> = [];
+              const addScore = (reason: string, score: number) => {
+                if (score !== 0) {
+                  scoreBreakdown.push({ reason, score });
+                }
+              };
+
+              if (
+                ["play", "resume", "播放", "继续播放", "play-button"].some((keyword) =>
+                  label.includes(keyword),
+                )
+              ) {
+                addScore("play-label", 20);
+              }
+
+              if (
+                rect.left <= primaryRect.right + 80 &&
+                rect.right >= primaryRect.left - 80 &&
+                rect.top <= primaryRect.bottom + 80 &&
+                rect.bottom >= primaryRect.top - 80
+              ) {
+                addScore("near-primary-media", 10);
+              }
+
+              if (
+                rect.width <= 160 &&
+                rect.height <= 100
+              ) {
+                addScore("button-sized", 4);
+              }
+
+              const score = scoreBreakdown.reduce((sum, item) => sum + item.score, 0);
+              if (score <= 0) {
+                return null;
+              }
+
+              return {
+                selector: helpers.buildSelector(element, { preferClasses: true }),
+                text: helpers.clipText(
+                  helpers.normalizeWhitespace(
+                    element.innerText ?? element.textContent ?? "",
+                  ),
+                  40,
+                ),
+                accessibleName: helpers.findAccessibleName(element) ?? undefined,
+                score,
+              };
+            })
+            .filter(
+              (
+                candidate,
+              ): candidate is NonNullable<typeof candidate> => Boolean(candidate?.selector),
+            )
+            .sort((left, right) => right.score - left.score);
+
+          const topPlayButton = playButtons[0];
+          if (topPlayButton) {
+            playMediaPlan.push({
+              method: "click_play_button",
+              confidence: toConfidence(topPlayButton.score, 30),
+              reasons: ["已识别到明确播放按钮，可作为点击媒体区域后的后备动作"],
+              selector: topPlayButton.selector,
+              text: topPlayButton.text || undefined,
+              accessibleName: topPlayButton.accessibleName,
+            });
+          }
+        }
       }
 
       return {
         total: mediaElements.length,
+        playMediaPlan,
         media: mediaElements,
       };
     },
@@ -115,6 +249,7 @@ export async function readMediaStateWithInspection(
   return {
     page: await deps.summarizePage(resolvedPageId, page),
     total: result.total,
+    playMediaPlan: result.playMediaPlan ?? [],
     media: result.media,
   };
 }

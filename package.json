@@ -6,6 +6,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "verify:plan-smoke": "node scripts/verify-plan-smoke.mjs",
     "dev:stdio": "tsx src/index.ts --transport stdio",
     "dev:http": "tsx src/index.ts --transport http",
     "start:stdio": "node dist/index.js --transport stdio",

@@ -343,6 +343,18 @@ export async function readPageState(page: Page): Promise<{
     };
   }
 
+  const overlay = await detectBlockingOverlays(page);
+  if (
+    overlay.blocked &&
+    overlay.summary &&
+    overlay.summary.recommendedAction === "auto_close_then_resume"
+  ) {
+    return {
+      pageState: "overlay_blocking",
+      overlay: overlay.summary,
+    };
+  }
+
   const authRequired = detectAuthRequired(
     {
       title,
@@ -359,7 +371,6 @@ export async function readPageState(page: Page): Promise<{
     };
   }
 
-  const overlay = await detectBlockingOverlays(page);
   if (overlay.blocked && overlay.summary) {
     return {
       pageState: "overlay_blocking",

@@ -245,22 +245,42 @@ export class BrowserSession {
     pageId: string,
     elements: T[],
   ): Array<T & { ref: string }> {
-    const refMap = new Map<string, string>();
+    const refMap = this.elementRefs.get(pageId) ?? new Map<string, string>();
+    const selectorToRef = new Map<string, string>();
+    for (const [ref, selector] of refMap.entries()) {
+      if (!selectorToRef.has(selector)) {
+        selectorToRef.set(selector, ref);
+      }
+    }
     const tagCounters = new Map<string, number>();
     const snapshotId = `s${this.snapshotCounter}`;
-    this.snapshotCounter += 1;
+    let createdNewRef = false;
 
     const elementsWithRefs = elements.map((element) => {
+      const existingRef = selectorToRef.get(element.selector);
+      if (existingRef) {
+        return {
+          ...element,
+          ref: existingRef,
+        };
+      }
+
       const normalizedTag = normalizeRefPart(element.tag || "element");
       const nextIndex = (tagCounters.get(normalizedTag) ?? 0) + 1;
       tagCounters.set(normalizedTag, nextIndex);
       const ref = `${snapshotId}-${normalizedTag}-${nextIndex}`;
       refMap.set(ref, element.selector);
+      selectorToRef.set(element.selector, ref);
+      createdNewRef = true;
       return {
         ...element,
         ref,
       };
     });
+
+    if (createdNewRef) {
+      this.snapshotCounter += 1;
+    }
 
     this.elementRefs.set(pageId, refMap);
     return elementsWithRefs;

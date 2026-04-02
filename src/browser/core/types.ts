@@ -172,6 +172,12 @@ export interface PrimaryResultCandidate {
   className?: string;
   containerSelector?: string;
   containerTextPreview?: string;
+  openIntent:
+    | "title_link"
+    | "card_primary_link"
+    | "container_link"
+    | "thumbnail_link"
+    | "unknown";
   score: number;
   scoreBreakdown: Array<{
     reason: string;
@@ -179,10 +185,21 @@ export interface PrimaryResultCandidate {
   }>;
 }
 
+export interface OpenResultPlanStep {
+  method: "title_link" | "card_primary_link" | "container_link" | "thumbnail_link";
+  confidence: number;
+  reasons: string[];
+  selector: string;
+  href?: string;
+  text?: string;
+  accessibleName?: string;
+}
+
 export interface FindPrimaryResultsResult {
   page: PageSummary;
   query?: string;
   total: number;
+  openResultPlan: OpenResultPlanStep[];
   results: Array<PrimaryResultCandidate & { ref: string }>;
 }
 
@@ -190,6 +207,7 @@ export interface RawFindPrimaryResultsResult {
   page: PageSummary;
   query?: string;
   total: number;
+  openResultPlan: OpenResultPlanStep[];
   results: PrimaryResultCandidate[];
 }
 
@@ -291,13 +309,24 @@ export interface MediaStateSummary {
 export interface ReadMediaStateResult {
   page: PageSummary;
   total: number;
+  playMediaPlan: MediaPlayPlanStep[];
   media: Array<MediaStateSummary & { ref: string }>;
 }
 
 export interface RawReadMediaStateResult {
   page: PageSummary;
   total: number;
+  playMediaPlan: MediaPlayPlanStep[];
   media: MediaStateSummary[];
+}
+
+export interface MediaPlayPlanStep {
+  method: "already_playing" | "click_media_surface" | "click_play_button";
+  confidence: number;
+  reasons: string[];
+  selector?: string;
+  text?: string;
+  accessibleName?: string;
 }
 
 export interface SubmitInputResult {
@@ -368,6 +397,11 @@ export interface SubmitWithPlanResult {
 }
 
 export interface DismissBlockingOverlayAttempt {
+  method:
+    | "top_right_hotspot"
+    | "close_candidate_click"
+    | "press_escape"
+    | "backdrop_click";
   selector: string;
   text?: string;
   accessibleName?: string;
@@ -376,11 +410,27 @@ export interface DismissBlockingOverlayAttempt {
   note?: string;
 }
 
+export interface OverlayDismissPlanStep {
+  method:
+    | "top_right_hotspot"
+    | "close_candidate_click"
+    | "press_escape"
+    | "backdrop_click";
+  confidence: number;
+  reasons: string[];
+  selector?: string;
+  text?: string;
+  accessibleName?: string;
+}
+
 export interface DismissBlockingOverlaysResult {
   page: PageSummary;
   beforePageState: PageState;
   afterPageState: PageState;
   dismissed: boolean;
+  dismissPlan: OverlayDismissPlanStep[];
+  chosenMethod?: OverlayDismissPlanStep["method"];
+  chosenSelector?: string;
   attempts: DismissBlockingOverlayAttempt[];
   totalCandidates: number;
   note?: string;

@@ -215,11 +215,14 @@
   说明：围绕指定输入框扫描附近可能承担提交动作的控件，并返回 `submitPlan`。`submitPlan` 是按顺序排好的提交方案，第一项是首选动作，后续项是失败后的后备动作；同时仍保留 `preferredSubmitMethod` 作为兼容字段。
 
 - `find_primary_results`
-  说明：在主内容区域里提取更像“结果卡片/主结果列表”的链接，适合商品列表、视频列表、搜索结果页这类噪音较多的页面。可选传 `query`，把更相关的结果排到前面。
+  说明：在主内容区域里提取更像“结果卡片/主结果列表”的链接，适合商品列表、视频列表、搜索结果页这类噪音较多的页面。可选传 `query`，把更相关的结果排到前面；同时返回 `openResultPlan`，把“标题链接优先、缩略图最后”的打开顺序直接给出来。
   适用场景：
   - 电商结果页里先拿主商品卡片，再决定点哪一条
   - 视频/文章结果列表里，优先锁定真正结果，而不是页头、筛选器、推荐链接
   - `page_snapshot` 返回的交互元素被导航或筛选控件噪音挤占时，单独补一轮主结果提取
+  返回重点：
+  - `results`：当前识别到的主结果候选
+  - `openResultPlan`：建议打开顺序，通常是 `title_link -> card_primary_link -> container_link -> thumbnail_link`
 
 - `extract_text`
   说明：提取整个页面或某个元素的文本内容。优先传 `ref`；也支持 `selector`。
@@ -230,13 +233,14 @@
   - `maxLength`
 
 - `read_media_state`
-  说明：读取页面里的 `video/audio` 元素状态，适合验证“真的开始播放了”，而不是只看按钮文案。
+  说明：读取页面里的 `video/audio` 元素状态，适合验证“真的开始播放了”，而不是只看按钮文案。会额外返回 `playMediaPlan`，给出更接近真人操作的播放动作顺序。
   常用返回：
   - `currentTime`：当前播放时间
   - `paused`：是否暂停
   - `duration`：总时长
   - `visible`：媒体元素是否可见
   - `isPrimary`：当前最像主媒体的元素
+  - `playMediaPlan`：建议动作顺序，通常是 `already_playing -> click_media_surface -> click_play_button`
   适用场景：
   - 视频详情页验证是否真正进入播放态
   - 页面上有多个媒体元素时，优先看主媒体状态
@@ -252,7 +256,11 @@
 ### 页面操作
 
 - `dismiss_blocking_overlays`
-  说明：尝试关闭当前页面上的普通遮挡弹窗或遮罩层，只处理高置信的“关闭/跳过/稍后/取消/知道了”这类控件，不默认点击“同意/允许”按钮。
+  说明：尝试关闭当前页面上的普通遮挡弹窗或遮罩层，只处理高置信的“关闭/跳过/稍后/取消/知道了”这类控件，不默认点击“同意/允许/登录/注册/继续”这类高风险按钮。内部会先生成 `dismissPlan`，再按计划执行，更接近真人“先点右上角 X；如果没有明确关闭按钮，就先点弹窗外空白处”的顺序。
+  返回重点：
+  - `dismissPlan`：建议关闭顺序；如果有明确关闭候选，通常是 `top_right_hotspot -> close_candidate_click -> press_escape -> backdrop_click`；如果没有明确关闭候选，则会优先 `backdrop_click -> press_escape`
+  - `chosenMethod`：实际命中的关闭方式
+  - `chosenSelector`：如果是点击动作，返回最终命中的元素选择器
   适用场景：
   - 登录提示挡住了主内容
   - Cookie 横幅挡住了按钮或输入框
@@ -363,6 +371,29 @@
 npm.cmd install
 npm.cmd run build
 ```
+
+## 本地回归验证
+
+正式回归入口：
+
+```powershell
+npm.cmd run verify:plan-smoke
+```
+
+这条 smoke 会一起验证 4 类基础能力：
+
+- 右上角 `X` 关闭弹窗
+- 没有关闭按钮时，点击弹窗外空白处关闭
+- 搜索/结果列表里标题链接优先
+- 媒体页里主媒体区优先、播放按钮兜底
+
+对应脚本：
+
+- [verify-plan-smoke.mjs](/d:/C_Project/chrome_mcp_server/scripts/verify-plan-smoke.mjs)
+- [realistic-overlay-fixture.html](/d:/C_Project/chrome_mcp_server/tests/fixtures/realistic-overlay-fixture.html)
+- [backdrop-only-overlay-fixture.html](/d:/C_Project/chrome_mcp_server/tests/fixtures/backdrop-only-overlay-fixture.html)
+- [result-plan-fixture.html](/d:/C_Project/chrome_mcp_server/tests/fixtures/result-plan-fixture.html)
+- [media-plan-fixture.html](/d:/C_Project/chrome_mcp_server/tests/fixtures/media-plan-fixture.html)
 
 ## 启动方式
 
@@ -482,6 +513,7 @@ npm.cmd run start:stdio
 目录约定（默认）：
 
 - Chrome 用户数据目录：`.profiles/active/default`
+- 正式 smoke 回归脚本：`scripts/verify-plan-smoke.mjs`
 - 临时脚本与测试工作目录：`.tmp/scripts`、`.tmp/workspaces`
 - 临时日志：`.tmp/logs`
 - 动作执行默认使用“执行 + 验证 + 重试”通用流程（重试参数由 `stepTimeout/maxRetries/retryBackoff` 控制）

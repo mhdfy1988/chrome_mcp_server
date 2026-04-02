@@ -16,7 +16,7 @@ export function registerInteractionTools(
     "dismiss_blocking_overlays",
     {
       description:
-        "尝试关闭当前页面上的普通遮挡弹窗或遮罩层，只处理高置信的“关闭/跳过/稍后/取消/知道了”这类控件，不默认点击同意按钮。",
+        "尝试关闭当前页面上的普通遮挡弹窗或遮罩层，只处理高置信的“关闭/跳过/稍后/取消/知道了”这类控件，不默认点击同意按钮。内部会先生成 dismissPlan，优先尝试主弹窗右上角热点，再退回明确 close 候选、Escape 和遮罩空白区点击。",
       inputSchema: z.object({
         pageId: z.string().optional().describe("可选，指定页面 ID。"),
         timeoutMs: z

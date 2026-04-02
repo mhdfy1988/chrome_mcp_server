@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Media Plan Fixture</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 24px;
+      }
+      .player {
+        width: 720px;
+        margin: 0 auto;
+      }
+      video {
+        display: block;
+        width: 720px;
+        height: 405px;
+        background: #111;
+      }
+      .controls {
+        display: flex;
+        gap: 12px;
+        margin-top: 12px;
+      }
+      button {
+        padding: 10px 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="player video-player">
+        <video preload="metadata"></video>
+        <div class="controls">
+          <button class="play-button" aria-label="播放">播放</button>
+          <button class="pause-button" aria-label="暂停">暂停</button>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

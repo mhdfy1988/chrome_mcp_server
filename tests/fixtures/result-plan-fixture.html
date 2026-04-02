@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Result Plan Fixture</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 24px;
+      }
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+      }
+      .results {
+        display: grid;
+        gap: 20px;
+      }
+      .card {
+        border: 1px solid #ccc;
+        border-radius: 12px;
+        padding: 16px;
+      }
+      .thumb {
+        display: inline-block;
+        width: 220px;
+        height: 124px;
+        background: linear-gradient(135deg, #d7e1ff, #f6d7ff);
+        border-radius: 10px;
+      }
+      .title-link {
+        display: inline-block;
+        margin-top: 12px;
+        font-size: 22px;
+        font-weight: bold;
+      }
+      .meta {
+        color: #666;
+        margin-top: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>搜索结果</h1>
+      <div class="results">
+        <article class="card result-card">
+          <a class="thumb-link" href="https://example.com/python-agent-thumbnail">
+            <img
+              class="thumb"
+              alt=""
+              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='124'%3E%3Crect width='220' height='124' fill='%23c9daf8'/%3E%3C/svg%3E"
+            />
+          </a>
+          <a class="title-link" href="https://example.com/python-agent-course">
+            Python Agent 实战课程
+          </a>
+          <div class="meta">12 小时 · 进阶课程 · 评分 4.9</div>
+        </article>
+
+        <article class="card result-card">
+          <a class="title-link" href="https://example.com/python-automation-guide">
+            Python 自动化指南
+          </a>
+          <div class="meta">文档 · 教程 · 收藏 10k+</div>
+        </article>
+      </div>
+    </main>
+  </body>
+</html>

@@ -19,6 +19,8 @@ export async function findPrimaryResultsWithInspection(
     (helpers, args) => {
       const normalize = (value: unknown) =>
         helpers.normalizeWhitespace(value).toLocaleLowerCase();
+      const toConfidence = (score: number, maxScore: number) =>
+        Number(Math.max(0.05, Math.min(0.99, score / maxScore)).toFixed(2));
       const queryText = normalize(args.query ?? "");
       const root =
         document.querySelector("main") ??
@@ -148,6 +150,9 @@ export async function findPrimaryResultsWithInspection(
             .filter(Boolean)
             .join(" ");
           const normalizedText = normalize(textHaystack);
+          const hasMediaChild = Boolean(
+            anchor.querySelector("img, picture, video, svg, canvas"),
+          );
           const containerText = helpers.clipText(
             helpers.normalizeWhitespace(
               (container as HTMLElement).innerText ??
@@ -246,6 +251,22 @@ export async function findPrimaryResultsWithInspection(
             return null;
           }
 
+          const openIntent:
+            | "title_link"
+            | "card_primary_link"
+            | "container_link"
+            | "thumbnail_link"
+            | "unknown" =
+            hasMediaChild && normalizedText.length < 8
+              ? "thumbnail_link"
+              : normalizedText.length >= 10
+                ? "title_link"
+                : container !== anchor
+                  ? "card_primary_link"
+                  : normalizedText.length >= 4
+                    ? "container_link"
+                    : "unknown";
+
           return {
             tag: summary.tag,
             role: summary.role,
@@ -260,6 +281,7 @@ export async function findPrimaryResultsWithInspection(
                 ? helpers.buildSelector(container, { preferClasses: true })
                 : undefined,
             containerTextPreview: containerText,
+            openIntent,
             score,
             scoreBreakdown,
           };
@@ -272,8 +294,72 @@ export async function findPrimaryResultsWithInspection(
         .sort((left, right) => right.score - left.score)
         .slice(0, args.maxResults);
 
+      const openMethodPriority = {
+        title_link: 0,
+        card_primary_link: 1,
+        container_link: 2,
+        thumbnail_link: 3,
+        unknown: 4,
+      } as const;
+
+      const openResultPlan = candidates
+        .filter(
+          (
+            candidate,
+          ): candidate is typeof candidate & {
+            openIntent: "title_link" | "card_primary_link" | "container_link" | "thumbnail_link";
+          } => candidate.openIntent !== "unknown",
+        )
+        .map((candidate) => {
+          const reasons: string[] = [];
+          if (candidate.openIntent === "title_link") {
+            reasons.push("标题语义最强，优先避免误点缩略图或广告位");
+          } else if (candidate.openIntent === "card_primary_link") {
+            reasons.push("卡片主链接可作为标题链接后的后备入口");
+          } else if (candidate.openIntent === "container_link") {
+            reasons.push("容器链接可用，但语义弱于标题链接");
+          } else if (candidate.openIntent === "thumbnail_link") {
+            reasons.push("缩略图入口最容易跑偏，放到最后尝试");
+          }
+
+          if (candidate.score >= 36) {
+            reasons.push("当前候选命中结果卡片信号较强");
+          }
+
+          if (queryText) {
+            const hasQueryMatch = candidate.scoreBreakdown.some((item) =>
+              item.reason === "query-exact-title" ||
+              item.reason === "query-match-title" ||
+              item.reason === "query-match-container",
+            );
+            if (hasQueryMatch) {
+              reasons.push("候选与当前查询词相关");
+            }
+          }
+
+          return {
+            method: candidate.openIntent,
+            confidence: toConfidence(candidate.score, 48),
+            reasons,
+            selector: candidate.selector,
+            href: candidate.href,
+            text: candidate.text,
+            accessibleName: candidate.accessibleName,
+          };
+        })
+        .sort((left, right) => {
+          const priorityDiff =
+            openMethodPriority[left.method] - openMethodPriority[right.method];
+          if (priorityDiff !== 0) {
+            return priorityDiff;
+          }
+          return right.confidence - left.confidence;
+        })
+        .slice(0, args.maxResults);
+
       return {
         total: candidates.length,
+        openResultPlan,
         results: candidates,
       };
     },
@@ -287,6 +373,7 @@ export async function findPrimaryResultsWithInspection(
     page: await deps.summarizePage(resolvedPageId, page),
     query,
     total: result.total,
+    openResultPlan: result.openResultPlan,
     results: result.results,
   };
 }

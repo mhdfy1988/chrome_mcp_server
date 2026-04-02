@@ -206,7 +206,7 @@ export function registerInspectionTools(
     "find_primary_results",
     {
       description:
-        "在主内容区域里提取更像“结果卡片/主结果列表”的链接，适合商品列表、视频列表、搜索结果页等噪音较多的页面。可选传 query 提升目标结果排序。",
+        "在主内容区域里提取更像“结果卡片/主结果列表”的链接，适合商品列表、视频列表、搜索结果页等噪音较多的页面。可选传 query 提升目标结果排序，并额外返回 openResultPlan，按“标题链接优先、缩略图最后”的顺序给出打开结果的建议步骤。",
       inputSchema: z.object({
         pageId: z.string().optional().describe("可选，指定页面 ID。"),
         query: z
@@ -240,7 +240,7 @@ export function registerInspectionTools(
     "read_media_state",
     {
       description:
-        "读取当前页面里 video/audio 元素的播放状态，适合验证视频是否真的开始播放，而不是只看按钮文案。",
+        "读取当前页面里 video/audio 元素的播放状态，适合验证视频是否真的开始播放，而不是只看按钮文案。会额外返回 playMediaPlan，按“先判定是否已播放，再点主媒体区域，最后点明确播放按钮”的顺序给出建议动作。",
       inputSchema: z.object({
         pageId: z.string().optional().describe("可选，指定页面 ID。"),
         selector: z

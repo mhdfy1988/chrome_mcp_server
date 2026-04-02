@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Backdrop Only Overlay Fixture</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f3efe6;
+        --panel: #fffaf2;
+        --ink: #1f1a16;
+        --muted: #73695d;
+        --brand: #155eef;
+        --brand-soft: rgba(21, 94, 239, 0.1);
+        --line: rgba(31, 26, 22, 0.08);
+        --shadow: 0 28px 80px rgba(24, 18, 12, 0.28);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(21, 94, 239, 0.12), transparent 24%),
+          linear-gradient(180deg, #fcfbf8 0%, var(--bg) 100%);
+      }
+
+      .shell {
+        width: min(1180px, calc(100vw - 48px));
+        margin: 0 auto;
+        padding: 32px 0 80px;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 22px;
+        align-items: stretch;
+      }
+
+      .panel,
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: rgba(255, 250, 242, 0.86);
+        box-shadow: 0 18px 40px rgba(31, 26, 22, 0.08);
+        backdrop-filter: blur(8px);
+      }
+
+      .panel {
+        padding: 28px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: var(--brand-soft);
+        color: #1146b3;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      h1 {
+        margin: 16px 0 12px;
+        font-size: clamp(36px, 5vw, 58px);
+        line-height: 1.06;
+      }
+
+      .lead {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.75;
+        font-size: 17px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 22px;
+      }
+
+      .card {
+        padding: 18px;
+      }
+
+      .card h2 {
+        margin: 0 0 8px;
+        font-size: 21px;
+      }
+
+      .card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .overlay-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 10020;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: rgba(17, 24, 39, 0.52);
+      }
+
+      .promo-modal {
+        width: min(560px, calc(100vw - 36px));
+        padding: 28px;
+        border-radius: 28px;
+        border: 1px solid rgba(21, 94, 239, 0.12);
+        background: linear-gradient(180deg, #fffdf9 0%, #fff7ec 100%);
+        box-shadow: var(--shadow);
+      }
+
+      .modal-badge {
+        display: inline-flex;
+        padding: 7px 12px;
+        border-radius: 999px;
+        background: rgba(21, 94, 239, 0.1);
+        color: #1146b3;
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .promo-modal h2 {
+        margin: 16px 0 10px;
+        font-size: 34px;
+        line-height: 1.12;
+      }
+
+      .promo-modal p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .promo-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+      }
+
+      .primary,
+      .ghost {
+        appearance: none;
+        border-radius: 999px;
+        padding: 12px 18px;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .primary {
+        border: 0;
+        background: var(--brand);
+        color: #fff;
+      }
+
+      .ghost {
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--ink);
+      }
+
+      .modal-hint {
+        margin-top: 18px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: rgba(21, 94, 239, 0.08);
+        color: #1146b3;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .status-bar {
+        margin-top: 24px;
+        padding: 16px 20px;
+        border-radius: 20px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.74);
+        color: var(--muted);
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div class="panel">
+          <span class="eyebrow">Backdrop Dismiss Demo</span>
+          <h1>点击弹窗外空白处才能关闭</h1>
+          <p class="lead">
+            这个夹具页专门验证遮挡弹窗的一个通用场景：页面上有显眼的 CTA，
+            但它们都不是关闭按钮；唯一正确动作是点击弹窗外的遮罩空白区。
+          </p>
+          <div class="grid">
+            <article class="card">
+              <h2>目标</h2>
+              <p>验证 dismiss 逻辑优先选择空白区关闭，而不是误点登录、注册、继续之类按钮。</p>
+            </article>
+            <article class="card">
+              <h2>约束</h2>
+              <p>弹窗内部没有关闭按钮，也没有右上角 X；内部 CTA 会阻止事件冒泡。</p>
+            </article>
+            <article class="card">
+              <h2>结果</h2>
+              <p>只要点击遮罩层空白处，弹窗就消失，页面回到 normal 状态。</p>
+            </article>
+          </div>
+          <div class="status-bar" id="fixture-status">状态：弹窗当前处于打开状态。</div>
+        </div>
+        <div class="panel">
+          <span class="eyebrow">Fixture Notes</span>
+          <h1>内部按钮都不是关闭动作</h1>
+          <p class="lead">
+            这里故意保留“登录/注册”和“继续浏览”按钮，模拟容易误判的高频 CTA。
+            如果自动化逻辑去点这些按钮，说明候选筛选还不够稳。
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <div class="overlay-backdrop" id="promo-backdrop">
+      <section class="promo-modal" id="promo-modal" aria-modal="true" role="dialog">
+        <span class="modal-badge">需要验证空白区关闭</span>
+        <h2>这里没有关闭按钮</h2>
+        <p>
+          你可以点击弹窗外的遮罩空白处关闭它。弹窗内部这些按钮都不是关闭动作，
+          只会模拟站内 CTA。
+        </p>
+        <div class="promo-actions">
+          <button class="primary" type="button" id="login-btn">登录/注册</button>
+          <button class="ghost" type="button" id="continue-btn">继续浏览</button>
+        </div>
+        <div class="modal-hint">
+          预期行为：自动化不应命中上面两个按钮，而应点击弹窗外空白处关闭当前弹窗。
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const backdrop = document.getElementById("promo-backdrop");
+      const modal = document.getElementById("promo-modal");
+      const status = document.getElementById("fixture-status");
+      const loginButton = document.getElementById("login-btn");
+      const continueButton = document.getElementById("continue-btn");
+
+      const updateStatus = (text) => {
+        status.textContent = `状态：${text}`;
+      };
+
+      const closeOverlay = () => {
+        backdrop.remove();
+        updateStatus("弹窗已关闭，页面恢复正常。");
+      };
+
+      backdrop.addEventListener("click", (event) => {
+        if (event.target === backdrop) {
+          closeOverlay();
+        }
+      });
+
+      modal.addEventListener("click", (event) => {
+        event.stopPropagation();
+      });
+
+      loginButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        updateStatus("点击了 登录/注册，但弹窗仍保持打开。");
+      });
+
+      continueButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        updateStatus("点击了 继续浏览，但弹窗仍保持打开。");
+      });
+    </script>
+  </body>
+</html>
