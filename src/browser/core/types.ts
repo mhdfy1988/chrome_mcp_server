@@ -130,6 +130,13 @@ export interface RawPageSnapshotResult {
   interactiveElements: RawSnapshotElementSummary[];
 }
 
+export interface EvaluateResult {
+  page: PageSummary;
+  value: string;
+  jsonValue?: unknown;
+  jsonValueError?: string;
+}
+
 export interface FindElementsResult {
   page: PageSummary;
   query: string;

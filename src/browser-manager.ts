@@ -36,6 +36,7 @@ import type {
   ClickAndWaitResult,
   ConsoleLogEntry,
   DismissBlockingOverlaysResult,
+  EvaluateResult,
   FindElementsResult,
   FindPrimaryInputsResult,
   FindPrimaryResultsResult,
@@ -336,7 +337,7 @@ export class BrowserManager {
   public async evaluate(options: {
     pageId?: string;
     expression: string;
-  }): Promise<{ page: PageSummary; value: string }> {
+  }): Promise<EvaluateResult> {
     return evaluateWithInspection(this.getInspectionDeps(), options);
   }
 

@@ -1,7 +1,7 @@
 ﻿import util from "node:util";
 import type { ElementHandle } from "puppeteer-core";
 import type { BrowserInspectionDeps } from "../core/inspection-deps.js";
-import type { PageSummary } from "../core/types.js";
+import type { EvaluateResult, PageSummary } from "../core/types.js";
 
 export async function extractTextWithInspection(
   deps: BrowserInspectionDeps,
@@ -88,16 +88,19 @@ export async function evaluateWithInspection(
     pageId?: string;
     expression: string;
   },
-): Promise<{ page: PageSummary; value: string }> {
+): Promise<EvaluateResult> {
   const page = await deps.resolvePage(options.pageId);
   const resolvedPageId = deps.requirePageId(page);
   const value = await page.evaluate((expression) => {
     return globalThis.eval(expression);
   }, options.expression);
+  const jsonValueResult = toJsonValue(value);
 
   return {
     page: await deps.summarizePage(resolvedPageId, page),
     value: formatJsonish(value),
+    jsonValue: jsonValueResult.jsonValue,
+    jsonValueError: jsonValueResult.jsonValueError,
   };
 }
 
@@ -130,6 +133,28 @@ function formatJsonish(value: unknown): string {
       breakLength: 100,
       maxArrayLength: 50,
     });
+  }
+}
+
+function toJsonValue(
+  value: unknown,
+): { jsonValue?: unknown; jsonValueError?: string } {
+  if (value === undefined) {
+    return { jsonValueError: "value is undefined" };
+  }
+
+  try {
+    const serialized = JSON.stringify(value);
+    if (serialized === undefined) {
+      return { jsonValueError: "value is not JSON-serializable" };
+    }
+
+    return { jsonValue: JSON.parse(serialized) };
+  } catch (error) {
+    return {
+      jsonValueError:
+        error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
