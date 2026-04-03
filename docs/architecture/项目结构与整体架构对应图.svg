@@ -1,0 +1,178 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1380" viewBox="0 0 1800 1380" role="img" aria-labelledby="title desc">
+  <title id="title">项目结构与整体架构对应图</title>
+  <desc id="desc">展示 chrome_mcp_server 当前项目目录、整体架构分层以及典型调用流之间的对应关系。</desc>
+  <defs>
+    <linearGradient id="bgMap" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f7fbff" />
+      <stop offset="100%" stop-color="#f4f8fb" />
+    </linearGradient>
+    <linearGradient id="headMap" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#114a7b" />
+      <stop offset="100%" stop-color="#2c75b3" />
+    </linearGradient>
+    <marker id="arrowMap" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5c7387" />
+    </marker>
+    <style>
+      .bg { fill: url(#bgMap); }
+      .head { fill: url(#headMap); }
+      .panel { fill: #ffffff; stroke: #d8e4ee; stroke-width: 2; }
+      .left-box { fill: #fbfdff; stroke: #9bb9d4; stroke-width: 2; rx: 18; ry: 18; }
+      .right-box { fill: #ffffff; stroke: #7ea8ca; stroke-width: 2.2; rx: 18; ry: 18; }
+      .support-box { fill: #f6fafc; stroke: #93a9bc; stroke-width: 2; rx: 18; ry: 18; }
+      .flow-box { fill: #fffaf2; stroke: #e0b27f; stroke-width: 2; rx: 18; ry: 18; }
+      .title { font: 700 34px 'Microsoft YaHei', 'Segoe UI', sans-serif; fill: #fff; }
+      .subtitle { font: 500 16px 'Microsoft YaHei', 'Segoe UI', sans-serif; fill: #dbeaf7; }
+      .section-title { font: 700 22px 'Microsoft YaHei', 'Segoe UI', sans-serif; fill: #17344d; }
+      .box-title { font: 700 20px 'Microsoft YaHei', 'Segoe UI', sans-serif; fill: #18344d; }
+      .box-sub { font: 500 14px 'Microsoft YaHei', 'Segoe UI', sans-serif; fill: #556c80; }
+      .box-strong { font: 700 14px 'Microsoft YaHei', 'Segoe UI', sans-serif; fill: #3c607c; }
+      .small { font: 500 13px 'Microsoft YaHei', 'Segoe UI', sans-serif; fill: #698092; }
+      .note { font: 500 15px 'Microsoft YaHei', 'Segoe UI', sans-serif; fill: #486074; }
+      .line { stroke: #5c7387; stroke-width: 2.4; fill: none; marker-end: url(#arrowMap); }
+      .line-soft { stroke: #88a1b6; stroke-width: 1.8; fill: none; marker-end: url(#arrowMap); }
+      .tag { font: 700 13px 'Microsoft YaHei', 'Segoe UI', sans-serif; fill: #1e6199; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1800" height="1380" rx="28" ry="28" />
+  <rect class="head" x="28" y="28" width="1744" height="94" rx="22" ry="22" />
+  <text class="title" x="62" y="72">chrome_mcp_server 项目结构与整体架构对应图</text>
+  <text class="subtitle" x="62" y="100">左边看项目目录，右边看架构分层，中间看映射关系；底部补 3 条典型调用流</text>
+
+  <rect class="panel" x="30" y="146" width="1740" height="842" rx="24" ry="24" />
+  <text class="section-title" x="58" y="184">1. 项目结构与架构分层映射</text>
+
+  <text class="section-title" x="86" y="224">项目结构</text>
+  <text class="section-title" x="1100" y="224">整体架构分层</text>
+
+  <rect class="left-box" x="70" y="254" width="430" height="82" />
+  <text class="box-title" x="98" y="292">src/mcp/</text>
+  <text class="box-sub" x="98" y="318">register-*-tools.ts / shared.ts</text>
+
+  <rect class="left-box" x="70" y="360" width="430" height="82" />
+  <text class="box-title" x="98" y="398">src/browser-manager.ts</text>
+  <text class="box-sub" x="98" y="424">门面、deps 组装、usecase 分发</text>
+
+  <rect class="left-box" x="70" y="466" width="430" height="118" />
+  <text class="box-title" x="98" y="504">src/browser/usecases/</text>
+  <text class="box-sub" x="98" y="530">interaction / submit / overlay / result / media</text>
+  <text class="box-sub" x="98" y="554">inspection / artifact / navigation / guards</text>
+
+  <rect class="left-box" x="70" y="608" width="430" height="82" />
+  <text class="box-title" x="98" y="646">src/browser/discovery/</text>
+  <text class="box-sub" x="98" y="672">find-* / media-state / blocking-overlays</text>
+
+  <rect class="left-box" x="70" y="714" width="430" height="82" />
+  <text class="box-title" x="98" y="752">src/browser/binding/</text>
+  <text class="box-sub" x="98" y="778">binding-record / registry / metadata / selector</text>
+
+  <rect class="left-box" x="70" y="820" width="430" height="82" />
+  <text class="box-title" x="98" y="858">src/browser/execution/</text>
+  <text class="box-sub" x="98" y="884">target-preflight / rebind-target / safe-click</text>
+
+  <rect class="left-box" x="560" y="254" width="430" height="82" />
+  <text class="box-title" x="588" y="292">src/browser/observation/</text>
+  <text class="box-sub" x="588" y="318">action-observation / types</text>
+
+  <rect class="left-box" x="560" y="360" width="430" height="82" />
+  <text class="box-title" x="588" y="398">src/browser/judgement/</text>
+  <text class="box-sub" x="588" y="424">action-judgement</text>
+
+  <rect class="left-box" x="560" y="466" width="430" height="82" />
+  <text class="box-title" x="588" y="504">src/browser/state/</text>
+  <text class="box-sub" x="588" y="530">page-* / inspection-text / dom-primitives</text>
+
+  <rect class="left-box" x="560" y="572" width="430" height="82" />
+  <text class="box-title" x="588" y="610">src/browser/session/</text>
+  <text class="box-sub" x="588" y="636">browser-session / deps-factory / runtime-deps</text>
+
+  <rect class="left-box" x="560" y="678" width="430" height="82" />
+  <text class="box-title" x="588" y="716">src/browser/core/</text>
+  <text class="box-sub" x="588" y="742">当前主要剩 dom-helpers.ts 装配入口</text>
+
+  <rect class="right-box" x="1100" y="254" width="590" height="82" />
+  <text class="box-title" x="1130" y="292">MCP 工具入口层</text>
+  <text class="box-sub" x="1130" y="318">只做 schema、参数校验、工具文案和结果包装</text>
+
+  <rect class="right-box" x="1100" y="360" width="590" height="82" />
+  <text class="box-title" x="1130" y="398">入口门面 / 用例分发枢纽</text>
+  <text class="box-sub" x="1130" y="424">持有 BrowserSession，创建 deps，把请求转发给 usecases</text>
+
+  <rect class="right-box" x="1100" y="466" width="590" height="118" />
+  <text class="box-title" x="1130" y="504">用例编排层</text>
+  <text class="box-sub" x="1130" y="530">负责 click / submit / dismiss / result / media 等业务链的调用顺序</text>
+  <text class="box-sub" x="1130" y="554">串 discovery / binding / execution / observation / judgement</text>
+
+  <rect class="right-box" x="1100" y="608" width="590" height="82" />
+  <text class="box-title" x="1130" y="646">页面发现层</text>
+  <text class="box-sub" x="1130" y="672">产出候选元素、专项计划与 PlanTargetRef</text>
+
+  <rect class="right-box" x="1100" y="714" width="590" height="82" />
+  <text class="box-title" x="1130" y="752">目标绑定层</text>
+  <text class="box-sub" x="1130" y="778">维护 runtimeNodeKey / fingerprint / contextAnchor / fallbackAnchors</text>
+
+  <rect class="right-box" x="1100" y="820" width="590" height="82" />
+  <text class="box-title" x="1130" y="858">动作执行层</text>
+  <text class="box-sub" x="1130" y="884">preflight、stable rebind、hit-test、安全坐标降级、ActionAttempt</text>
+
+  <rect class="support-box" x="1100" y="926" width="590" height="82" />
+  <text class="box-title" x="1130" y="964">结果观察层</text>
+  <text class="box-sub" x="1130" y="990">收 URL / title / popup / new_target / DOM / content ready 等证据</text>
+
+  <rect class="support-box" x="1100" y="1032" width="590" height="82" />
+  <text class="box-title" x="1130" y="1070">结果判定层</text>
+  <text class="box-sub" x="1130" y="1096">根据观察证据做成功/失败归因与重试判断</text>
+
+  <rect class="support-box" x="1100" y="1138" width="590" height="108" />
+  <text class="box-title" x="1130" y="1176">统一底座与剩余装配层</text>
+  <text class="box-sub" x="1130" y="1202">state/：统一状态快照基础层</text>
+  <text class="box-sub" x="1130" y="1226">session/：会话与运行时层；core/：剩余基础装配层</text>
+
+  <path class="line" d="M500 295 L1100 295" />
+  <path class="line" d="M500 401 L1100 401" />
+  <path class="line" d="M500 525 L1100 525" />
+  <path class="line" d="M500 649 L1100 649" />
+  <path class="line" d="M500 755 L1100 755" />
+  <path class="line" d="M500 861 L1100 861" />
+  <path class="line" d="M990 295 L1100 967" />
+  <path class="line" d="M990 401 L1100 1073" />
+  <path class="line" d="M990 507 L1100 1200" />
+  <path class="line" d="M990 613 L1100 1200" />
+  <path class="line" d="M990 719 L1100 1200" />
+
+  <text class="small" x="70" y="950">当前最核心的真实主链：MCP -> browser-manager -> usecases -> discovery/binding/execution/observation/judgement</text>
+  <text class="small" x="70" y="972">当前剩余例外：core/ 主要保留页面上下文 helper 装配，不再承载主链业务。</text>
+
+  <rect class="panel" x="30" y="1018" width="1740" height="332" rx="24" ry="24" />
+  <text class="section-title" x="58" y="1056">2. 典型调用流对应关系</text>
+
+  <rect class="flow-box" x="70" y="1088" width="530" height="220" />
+  <text class="box-title" x="98" y="1122">A. 点击并等待</text>
+  <text class="box-sub" x="98" y="1152">register-interaction-tools.ts</text>
+  <text class="box-sub" x="98" y="1178">→ browser-manager.ts</text>
+  <text class="box-sub" x="98" y="1204">→ usecases/interaction-usecases.ts</text>
+  <text class="box-sub" x="98" y="1230">→ execution/target-preflight.ts + safe-click.ts</text>
+  <text class="box-sub" x="98" y="1256">→ usecases/action-execution-usecases.ts</text>
+  <text class="box-sub" x="98" y="1282">→ observation/action-observation.ts</text>
+
+  <rect class="flow-box" x="636" y="1088" width="530" height="220" />
+  <text class="box-title" x="664" y="1122">B. 按结果计划打开结果</text>
+  <text class="box-sub" x="664" y="1152">register-inspection-tools.ts</text>
+  <text class="box-sub" x="664" y="1178">→ browser-manager.ts</text>
+  <text class="box-sub" x="664" y="1204">→ usecases/result-usecases.ts</text>
+  <text class="box-sub" x="664" y="1230">→ usecases/inspection-usecases.ts</text>
+  <text class="box-sub" x="664" y="1256">→ discovery/find-primary-results.ts + plan-target-resolution.ts</text>
+  <text class="box-sub" x="664" y="1282">→ execution / observation / judgement</text>
+
+  <rect class="flow-box" x="1202" y="1088" width="530" height="220" />
+  <text class="box-title" x="1230" y="1122">C. 按播放计划执行播放</text>
+  <text class="box-sub" x="1230" y="1152">register-inspection-tools.ts</text>
+  <text class="box-sub" x="1230" y="1178">→ browser-manager.ts</text>
+  <text class="box-sub" x="1230" y="1204">→ usecases/media-usecases.ts</text>
+  <text class="box-sub" x="1230" y="1230">→ usecases/inspection-usecases.ts</text>
+  <text class="box-sub" x="1230" y="1256">→ discovery/media-state.ts + plan-target-resolution.ts</text>
+  <text class="box-sub" x="1230" y="1282">→ execution 后再次回读媒体状态</text>
+
+  <text class="note" x="60" y="1334">当前判断：项目结构与整体架构图已经基本一致；下一步主任务不是继续拆层，而是做真实站点总回归，验证 target-first + stable rebind 的实战稳定性。</text>
+</svg>

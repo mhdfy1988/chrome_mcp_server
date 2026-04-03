@@ -1,4 +1,4 @@
-{
+﻿{
   "taskName": "github-repo-navigation-smoke",
   "baseUrl": "https://github.com/openai/openai-cookbook",
   "goal": "验证公开 GitHub 仓库页面内标签导航是否正常，并记录跳转结果。",
@@ -84,6 +84,7 @@
       "domObservation",
       "screenshotPath"
     ],
-    "useTemplate": "docs/bug-report-template.md"
+    "useTemplate": "docs/templates/bug-report-template.md"
   }
 }
+

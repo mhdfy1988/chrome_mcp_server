@@ -1,4 +1,4 @@
-{
+﻿{
   "taskName": "python-docs-read",
   "baseUrl": "https://docs.python.org/3/library/asyncio-task.html",
   "goal": "验证技术文档页面的正文阅读、章节提取和结构化摘要输出。",
@@ -75,7 +75,7 @@
       "domObservation",
       "screenshotPath"
     ],
-    "useTemplate": "docs/bug-report-template.md"
+    "useTemplate": "docs/templates/bug-report-template.md"
   },
   "output": {
     "kind": "markdown_summary",
@@ -88,3 +88,4 @@
     ]
   }
 }
+

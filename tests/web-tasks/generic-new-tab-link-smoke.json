@@ -1,4 +1,4 @@
-{
+﻿{
   "taskName": "generic-new-tab-link-smoke",
   "baseUrl": "<PAGE_WITH_EXTERNAL_LINK_URL>",
   "goal": "验证点击帮助文档、详情页或外链后，是否按预期打开新页或新标签。",
@@ -76,6 +76,7 @@
       "domObservation",
       "screenshotPath"
     ],
-    "useTemplate": "docs/bug-report-template.md"
+    "useTemplate": "docs/templates/bug-report-template.md"
   }
 }
+

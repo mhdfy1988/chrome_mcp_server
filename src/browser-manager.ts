@@ -1,15 +1,25 @@
 ﻿import type { Page } from "puppeteer-core";
-import { screenshotWithRuntime } from "./browser/ops/artifact-tools.js";
+import type { BrowserRuntimeDeps } from "./browser/session/runtime-deps.js";
+import { BrowserSession } from "./browser/session/browser-session.js";
 import {
-  assertSubmitInputAllowed,
-} from "./browser/flow/fallback-guards.js";
-import type { BrowserInspectionDeps } from "./browser/core/inspection-deps.js";
-import { findElementsWithInspection } from "./browser/inspect/find-elements.js";
-import { findPrimaryInputsWithInspection } from "./browser/inspect/find-primary-inputs.js";
-import { findPrimaryResultsWithInspection } from "./browser/inspect/find-primary-results.js";
-import { findSubmitTargetsWithInspection } from "./browser/inspect/find-submit-targets.js";
-import { extractTextWithInspection, evaluateWithInspection } from "./browser/inspect/inspection-text.js";
-import { readMediaStateWithInspection } from "./browser/inspect/media-state.js";
+  createBrowserInspectionUsecaseDeps,
+  createBrowserRuntimeDeps,
+} from "./browser/session/deps-factory.js";
+import {
+  evaluateWithRuntime,
+  extractTextWithRuntime,
+  findElementsWithRuntime,
+  findPrimaryInputsWithRuntime,
+  findPrimaryResultsWithRuntime,
+  findSubmitTargetsWithRuntime,
+  pageSnapshotWithRuntime,
+  readMediaStateWithRuntime,
+  type BrowserInspectionUsecaseDeps,
+} from "./browser/usecases/inspection-usecases.js";
+import { openResultWithPlanWithRuntime } from "./browser/usecases/result-usecases.js";
+import { playMediaWithPlanWithRuntime } from "./browser/usecases/media-usecases.js";
+import { screenshotWithRuntime } from "./browser/usecases/artifact-usecases.js";
+import { assertSubmitInputAllowed } from "./browser/usecases/usecase-guards.js";
 import {
   clickAndWaitWithRuntime,
   clickWithRuntime,
@@ -18,8 +28,8 @@ import {
   submitInputWithRuntime,
   submitWithPlanWithRuntime,
   typeTextWithRuntime,
-} from "./browser/ops/interaction-tools.js";
-import { dismissBlockingOverlaysWithRuntime } from "./browser/ops/overlay-tools.js";
+} from "./browser/usecases/interaction-usecases.js";
+import { dismissBlockingOverlaysWithRuntime } from "./browser/usecases/overlay-usecases.js";
 import {
   goBackWithRuntime,
   navigateWithRuntime,
@@ -27,38 +37,46 @@ import {
   reloadPageWithRuntime,
   selectPageWithRuntime,
   waitForWithRuntime,
-} from "./browser/ops/navigation-tools.js";
-import { pageSnapshotWithInspection } from "./browser/inspect/page-snapshot.js";
-import type { BrowserRuntimeDeps } from "./browser/core/runtime-deps.js";
-import { BrowserSession } from "./browser/core/session.js";
+} from "./browser/usecases/navigation-usecases.js";
 import type {
   BrowserStatus,
-  ClickAndWaitResult,
   ConsoleLogEntry,
-  DismissBlockingOverlaysResult,
+  NavigateResult,
+  NetworkLogEntry,
+  PageSummary,
+  ScreenshotResult,
   EvaluateResult,
+} from "./browser/state/types.js";
+import type {
   FindElementsResult,
   FindPrimaryInputsResult,
   FindPrimaryResultsResult,
   FindSubmitTargetsResult,
-  NavigateResult,
-  NetworkLogEntry,
   PageSnapshotResult,
-  PageSummary,
-  PressKeyAndWaitResult,
   ReadMediaStateResult,
-  ScreenshotResult,
+} from "./browser/discovery/types.js";
+import type { ActionPageSummary } from "./browser/execution/types.js";
+import type { WaitMatchMode } from "./browser/observation/types.js";
+import type {
+  ClickAndWaitResult,
+  DismissBlockingOverlaysResult,
+  PressKeyAndWaitResult,
+  OpenResultWithPlanResult,
+  PlayMediaWithPlanResult,
   SubmitInputResult,
   SubmitWithPlanResult,
-  WaitMatchMode,
-} from "./browser/core/types.js";
+} from "./browser/usecases/types.js";
 import type { ChromeConfig, WaitUntilMode } from "./config.js";
 
 export class BrowserManager {
   private readonly session: BrowserSession;
+  private readonly runtimeDeps: BrowserRuntimeDeps;
+  private readonly inspectionUsecaseDeps: BrowserInspectionUsecaseDeps;
 
   public constructor(config: ChromeConfig) {
     this.session = new BrowserSession(config);
+    this.runtimeDeps = createBrowserRuntimeDeps(this.session);
+    this.inspectionUsecaseDeps = createBrowserInspectionUsecaseDeps(this.session);
   }
 
   public async getStatus(): Promise<BrowserStatus> {
@@ -70,11 +88,11 @@ export class BrowserManager {
   }
 
   public async openPage(url?: string): Promise<PageSummary> {
-    return openPageWithRuntime(this.getRuntimeDeps(), url);
+    return openPageWithRuntime(this.runtimeDeps, url);
   }
 
   public async selectPage(pageId: string): Promise<PageSummary> {
-    return selectPageWithRuntime(this.getRuntimeDeps(), pageId);
+    return selectPageWithRuntime(this.runtimeDeps, pageId);
   }
 
   public async navigate(
@@ -82,21 +100,21 @@ export class BrowserManager {
     pageId?: string,
     waitUntil: WaitUntilMode = "domcontentloaded",
   ): Promise<NavigateResult> {
-    return navigateWithRuntime(this.getRuntimeDeps(), url, pageId, waitUntil);
+    return navigateWithRuntime(this.runtimeDeps, url, pageId, waitUntil);
   }
 
   public async goBack(
     pageId?: string,
     waitUntil: WaitUntilMode = "domcontentloaded",
   ): Promise<NavigateResult> {
-    return goBackWithRuntime(this.getRuntimeDeps(), pageId, waitUntil);
+    return goBackWithRuntime(this.runtimeDeps, pageId, waitUntil);
   }
 
   public async reloadPage(
     pageId?: string,
     waitUntil: WaitUntilMode = "domcontentloaded",
   ): Promise<NavigateResult> {
-    return reloadPageWithRuntime(this.getRuntimeDeps(), pageId, waitUntil);
+    return reloadPageWithRuntime(this.runtimeDeps, pageId, waitUntil);
   }
 
   public async waitFor(options: {
@@ -109,7 +127,7 @@ export class BrowserManager {
     matchMode: WaitMatchMode;
     timeoutMs?: number;
   }): Promise<PageSummary> {
-    return waitForWithRuntime(this.getRuntimeDeps(), options);
+    return waitForWithRuntime(this.runtimeDeps, options);
   }
 
   public async click(
@@ -119,8 +137,8 @@ export class BrowserManager {
       pageId?: string;
       timeoutMs?: number;
     },
-  ): Promise<PageSummary> {
-    return clickWithRuntime(this.getRuntimeDeps(), options);
+  ): Promise<ActionPageSummary> {
+    return clickWithRuntime(this.runtimeDeps, options);
   }
 
   public async clickAndWait(options: {
@@ -139,7 +157,7 @@ export class BrowserManager {
     contentReadyTimeoutMs?: number;
     matchMode?: WaitMatchMode;
   }): Promise<ClickAndWaitResult> {
-    return clickAndWaitWithRuntime(this.getRuntimeDeps(), options);
+    return clickAndWaitWithRuntime(this.runtimeDeps, options);
   }
 
   public async typeText(options: {
@@ -150,12 +168,12 @@ export class BrowserManager {
     clear: boolean;
     submit: boolean;
     timeoutMs?: number;
-  }): Promise<PageSummary> {
-    return typeTextWithRuntime(this.getRuntimeDeps(), options);
+  }): Promise<ActionPageSummary> {
+    return typeTextWithRuntime(this.runtimeDeps, options);
   }
 
-  public async pressKey(key: string, pageId?: string): Promise<PageSummary> {
-    return pressKeyWithRuntime(this.getRuntimeDeps(), key, pageId);
+  public async pressKey(key: string, pageId?: string): Promise<ActionPageSummary> {
+    return pressKeyWithRuntime(this.runtimeDeps, key, pageId);
   }
 
   public async pressKeyAndWait(options: {
@@ -173,7 +191,7 @@ export class BrowserManager {
     contentReadyTimeoutMs?: number;
     matchMode?: WaitMatchMode;
   }): Promise<PressKeyAndWaitResult> {
-    return pressKeyAndWaitWithRuntime(this.getRuntimeDeps(), options);
+    return pressKeyAndWaitWithRuntime(this.runtimeDeps, options);
   }
 
   public async extractText(options: {
@@ -183,7 +201,7 @@ export class BrowserManager {
     mode?: "auto" | "main" | "article" | "body";
     maxLength: number;
   }): Promise<{ page: PageSummary; text: string }> {
-    return extractTextWithInspection(this.getInspectionDeps(), options);
+    return extractTextWithRuntime(this.inspectionUsecaseDeps, options);
   }
 
   public async pageSnapshot(options: {
@@ -191,18 +209,7 @@ export class BrowserManager {
     maxTextLength: number;
     maxElements: number;
   }): Promise<PageSnapshotResult> {
-    const snapshot = await pageSnapshotWithInspection(
-      this.getInspectionDeps(),
-      options,
-    );
-
-    return {
-      ...snapshot,
-      interactiveElements: this.session.attachElementRefs(
-        snapshot.page.pageId,
-        snapshot.interactiveElements,
-      ),
-    };
+    return pageSnapshotWithRuntime(this.inspectionUsecaseDeps, options);
   }
 
   public async findElements(options: {
@@ -214,19 +221,14 @@ export class BrowserManager {
     maxResults: number;
     inspectLimit: number;
   }): Promise<FindElementsResult> {
-    const result = await findElementsWithInspection(this.getInspectionDeps(), options);
-
-    return {
-      ...result,
-      elements: this.session.attachElementRefs(result.page.pageId, result.elements),
-    };
+    return findElementsWithRuntime(this.inspectionUsecaseDeps, options);
   }
 
   public async findPrimaryInputs(options: {
     pageId?: string;
     maxResults: number;
   }): Promise<FindPrimaryInputsResult> {
-    return findPrimaryInputsWithInspection(this.getInspectionDeps(), options);
+    return findPrimaryInputsWithRuntime(this.inspectionUsecaseDeps, options);
   }
 
   public async findPrimaryResults(options: {
@@ -234,15 +236,27 @@ export class BrowserManager {
     query?: string;
     maxResults: number;
   }): Promise<FindPrimaryResultsResult> {
-    const result = await findPrimaryResultsWithInspection(
-      this.getInspectionDeps(),
-      options,
-    );
+    return findPrimaryResultsWithRuntime(this.inspectionUsecaseDeps, options);
+  }
 
-    return {
-      ...result,
-      results: this.session.attachElementRefs(result.page.pageId, result.results),
-    };
+  public async openResultWithPlan(options: {
+    pageId?: string;
+    query?: string;
+    maxResults?: number;
+    timeoutMs?: number;
+    waitForNavigation?: boolean;
+    waitUntil?: WaitUntilMode;
+    waitForSelector?: string;
+    waitForTitle?: string;
+    waitForUrl?: string;
+    contentReadySelector?: string;
+    contentReadyText?: string;
+    contentReadyTextSelector?: string;
+    contentReadyTimeoutMs?: number;
+    matchMode?: WaitMatchMode;
+    maxPlanSteps?: number;
+  }): Promise<OpenResultWithPlanResult> {
+    return openResultWithPlanWithRuntime(this.runtimeDeps, options);
   }
 
   public async findSubmitTargets(options: {
@@ -251,22 +265,7 @@ export class BrowserManager {
     selector?: string;
     maxResults: number;
   }): Promise<FindSubmitTargetsResult> {
-    const page = await this.session.resolvePage(options.pageId);
-    const pageId = this.session.requirePageId(page);
-    const selector =
-      options.ref
-        ? this.session.resolveSelectorForRef(pageId, options.ref)
-        : options.selector;
-
-    if (!selector) {
-      throw new Error("selector 和 ref 至少要提供一个。");
-    }
-
-    return findSubmitTargetsWithInspection(this.getInspectionDeps(), {
-      pageId,
-      selector,
-      maxResults: options.maxResults,
-    });
+    return findSubmitTargetsWithRuntime(this.inspectionUsecaseDeps, options);
   }
 
   public async readMediaState(options: {
@@ -274,12 +273,17 @@ export class BrowserManager {
     selector?: string;
     maxResults: number;
   }): Promise<ReadMediaStateResult> {
-    const result = await readMediaStateWithInspection(this.getInspectionDeps(), options);
+    return readMediaStateWithRuntime(this.inspectionUsecaseDeps, options);
+  }
 
-    return {
-      ...result,
-      media: this.session.attachElementRefs(result.page.pageId, result.media),
-    };
+  public async playMediaWithPlan(options: {
+    pageId?: string;
+    selector?: string;
+    timeoutMs?: number;
+    maxResults?: number;
+    maxPlanSteps?: number;
+  }): Promise<PlayMediaWithPlanResult> {
+    return playMediaWithPlanWithRuntime(this.runtimeDeps, options);
   }
 
   public async dismissBlockingOverlays(options: {
@@ -287,7 +291,7 @@ export class BrowserManager {
     timeoutMs?: number;
     maxSteps?: number;
   }): Promise<DismissBlockingOverlaysResult> {
-    return dismissBlockingOverlaysWithRuntime(this.getRuntimeDeps(), options);
+    return dismissBlockingOverlaysWithRuntime(this.runtimeDeps, options);
   }
 
   public async submitInput(options: {
@@ -295,8 +299,8 @@ export class BrowserManager {
     pageId?: string;
     timeoutMs?: number;
   }): Promise<SubmitInputResult> {
-    await assertSubmitInputAllowed(this.getRuntimeDeps(), options);
-    return submitInputWithRuntime(this.getRuntimeDeps(), options);
+    await assertSubmitInputAllowed(this.runtimeDeps, options);
+    return submitInputWithRuntime(this.runtimeDeps, options);
   }
 
   public async submitWithPlan(options: {
@@ -316,29 +320,14 @@ export class BrowserManager {
     matchMode?: WaitMatchMode;
     maxPlanSteps?: number;
   }): Promise<SubmitWithPlanResult> {
-    const page = await this.session.resolvePage(options.pageId);
-    const pageId = this.session.requirePageId(page);
-    const selector =
-      options.ref
-        ? this.session.resolveSelectorForRef(pageId, options.ref)
-        : options.selector;
-
-    if (!selector) {
-      throw new Error("selector 和 ref 至少要提供一个。");
-    }
-
-    return submitWithPlanWithRuntime(this.getRuntimeDeps(), {
-      ...options,
-      pageId,
-      selector,
-    });
+    return submitWithPlanWithRuntime(this.runtimeDeps, options);
   }
 
   public async evaluate(options: {
     pageId?: string;
     expression: string;
   }): Promise<EvaluateResult> {
-    return evaluateWithInspection(this.getInspectionDeps(), options);
+    return evaluateWithRuntime(this.inspectionUsecaseDeps, options);
   }
 
   public async screenshot(options: {
@@ -350,7 +339,7 @@ export class BrowserManager {
     quality?: number;
     savePath?: string;
   }): Promise<ScreenshotResult> {
-    return screenshotWithRuntime(this.getRuntimeDeps(), options);
+    return screenshotWithRuntime(this.runtimeDeps, options);
   }
 
   public async getConsoleLogs(
@@ -379,35 +368,5 @@ export class BrowserManager {
     await this.session.shutdown();
   }
 
-  private getInspectionDeps(): BrowserInspectionDeps {
-    return {
-      defaultTimeoutMs: this.session.config.defaultTimeoutMs,
-      resolvePage: (pageId) => this.session.resolvePage(pageId),
-      requirePageId: (page) => this.session.requirePageId(page),
-      summarizePage: (pageId, page) => this.session.summarizePage(pageId, page),
-      resolveSelectorForRef: (pageId, ref) =>
-        this.session.resolveSelectorForRef(pageId, ref),
-    };
-  }
-
-  private getRuntimeDeps(): BrowserRuntimeDeps {
-    return {
-      config: this.session.config,
-      isManagedBrowser: () => this.session.isManagedBrowser(),
-      ensureBrowser: (startIfNeeded) => this.session.ensureBrowser(startIfNeeded),
-      syncPages: () => this.session.syncPages(),
-      trackPage: (page) => this.session.trackPage(page),
-      applyTimeouts: (page) => this.session.applyTimeouts(page),
-      instrumentPage: (pageId, page) => this.session.instrumentPage(pageId, page),
-      resolvePage: (pageId) => this.session.resolvePage(pageId),
-      requirePageId: (page) => this.session.requirePageId(page),
-      summarizePage: (pageId, page) => this.session.summarizePage(pageId, page),
-      getCurrentPageId: () => this.session.getCurrentPageId(),
-      setCurrentPageId: (pageId) => this.session.setCurrentPageId(pageId),
-      getPages: () => this.session.getPages(),
-      resolveSelectorForRef: (pageId, ref) =>
-        this.session.resolveSelectorForRef(pageId, ref),
-    };
-  }
 }
 

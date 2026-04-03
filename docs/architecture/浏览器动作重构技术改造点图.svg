@@ -1,0 +1,156 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1260" viewBox="0 0 1800 1260" role="img" aria-labelledby="title desc">
+  <title id="title">浏览器动作重构技术改造点图</title>
+  <desc id="desc">展示浏览器动作重构需要修改的主要技术点、优先级和对应代码文件。</desc>
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fffdf8" />
+      <stop offset="100%" stop-color="#f4f7fb" />
+    </linearGradient>
+    <linearGradient id="head2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#8c4a14" />
+      <stop offset="100%" stop-color="#c26b1d" />
+    </linearGradient>
+    <marker id="arrow2" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#546f86" />
+    </marker>
+    <style>
+      .bg { fill: url(#bg2); }
+      .head { fill: url(#head2); }
+      .title { font: 700 34px 'Microsoft YaHei', 'Segoe UI', sans-serif; fill: #fff; }
+      .subtitle { font: 500 16px 'Microsoft YaHei', 'Segoe UI', sans-serif; fill: #fde8d2; }
+      .panel { fill: #ffffff; stroke: #d8e2ea; stroke-width: 2; }
+      .section-title { font: 700 21px 'Microsoft YaHei', 'Segoe UI', sans-serif; fill: #19344a; }
+      .lane-p0 { fill: #fff5ef; stroke: #e79b6a; stroke-width: 2.2; }
+      .lane-p1 { fill: #f4f9ff; stroke: #80acd1; stroke-width: 2.2; }
+      .lane-p2 { fill: #eef8f1; stroke: #6cb27c; stroke-width: 2.2; }
+      .card { fill: #ffffff; stroke: #cbd9e4; stroke-width: 1.8; rx: 18; ry: 18; }
+      .badge-p0 { fill: #b85b23; }
+      .badge-p1 { fill: #2d73ad; }
+      .badge-p2 { fill: #3f8c53; }
+      .badge-text { font: 700 13px 'Microsoft YaHei', 'Segoe UI', sans-serif; fill: #fff; }
+      .card-title { font: 700 20px 'Microsoft YaHei', 'Segoe UI', sans-serif; fill: #15324a; }
+      .card-sub { font: 500 14px 'Microsoft YaHei', 'Segoe UI', sans-serif; fill: #52687b; }
+      .card-strong { font: 700 14px 'Microsoft YaHei', 'Segoe UI', sans-serif; fill: #36526b; }
+      .lane-title { font: 700 24px 'Microsoft YaHei', 'Segoe UI', sans-serif; fill: #18344d; }
+      .lane-sub { font: 500 14px 'Microsoft YaHei', 'Segoe UI', sans-serif; fill: #5c7285; }
+      .line { stroke: #546f86; stroke-width: 2.4; fill: none; marker-end: url(#arrow2); }
+      .note { font: 500 15px 'Microsoft YaHei', 'Segoe UI', sans-serif; fill: #455d72; }
+      .small { font: 500 13px 'Microsoft YaHei', 'Segoe UI', sans-serif; fill: #6a8091; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1800" height="1260" rx="28" ry="28" />
+  <rect class="head" x="30" y="28" width="1740" height="94" rx="22" ry="22" />
+  <text class="title" x="64" y="72">浏览器动作重构技术改造点图</text>
+  <text class="subtitle" x="64" y="101">主干重构已完成；当前重点：真实站点回归与阶段 4 验收</text>
+
+  <rect class="panel" x="30" y="146" width="1740" height="1084" rx="24" ry="24" />
+
+  <rect class="lane-p0" x="56" y="182" width="1688" height="294" rx="24" ry="24" />
+  <text class="lane-title" x="84" y="224">P0 基础底座</text>
+  <text class="lane-sub" x="84" y="248">先补统一状态快照与 session/target/page 事实层，再把绑定、语义发现和动作命中证据做稳。</text>
+
+  <rect class="card" x="84" y="278" width="360" height="166" />
+  <rect class="badge-p0" x="108" y="300" width="58" height="28" rx="10" ry="10" />
+  <text class="badge-text" x="122" y="319">P0-0</text>
+  <text class="card-title" x="188" y="320">统一状态快照与会话事实层</text>
+  <text class="card-strong" x="108" y="356">修改文件</text>
+  <text class="card-sub" x="108" y="380">session.ts / state/* / session/*</text>
+  <text class="card-strong" x="108" y="410">改造点</text>
+  <text class="card-sub" x="108" y="434">统一 DOM / AX / styles / geometry / target events，补 session / target / page 三层事实源</text>
+
+  <rect class="card" x="492" y="278" width="360" height="166" />
+  <rect class="badge-p0" x="516" y="300" width="58" height="28" rx="10" ry="10" />
+  <text class="badge-text" x="530" y="319">P0-1</text>
+  <text class="card-title" x="596" y="320">把 ref 升级为双层绑定</text>
+  <text class="card-strong" x="516" y="356">修改文件</text>
+  <text class="card-sub" x="516" y="380">session.ts / binding/*</text>
+  <text class="card-strong" x="516" y="410">改造点</text>
+  <text class="card-sub" x="516" y="434">引入 runtimeNodeKey + fingerprint + contextAnchor，停止把 ref 当 selector 别名</text>
+
+  <rect class="card" x="900" y="278" width="360" height="166" />
+  <rect class="badge-p0" x="924" y="300" width="58" height="28" rx="10" ry="10" />
+  <text class="badge-text" x="938" y="319">P0-2</text>
+  <text class="card-title" x="1004" y="320">页面发现改成语义发现</text>
+  <text class="card-strong" x="924" y="356">修改文件</text>
+  <text class="card-sub" x="924" y="380">dom-helpers.ts / discovery/*</text>
+  <text class="card-strong" x="924" y="410">改造点</text>
+  <text class="card-sub" x="924" y="434">补 AX role、JS click listener、label 关系、cursor 等交互语义，selector 退成 fallback</text>
+
+  <rect class="card" x="1308" y="278" width="360" height="166" />
+  <rect class="badge-p0" x="1332" y="300" width="58" height="28" rx="10" ry="10" />
+  <text class="badge-text" x="1346" y="319">P0-3</text>
+  <text class="card-title" x="1412" y="320">统一 preflight 与命中回执</text>
+  <text class="card-strong" x="1332" y="356">修改文件</text>
+  <text class="card-sub" x="1332" y="380">execution/* / interaction-tools.ts</text>
+  <text class="card-strong" x="1332" y="410">改造点</text>
+  <text class="card-sub" x="1332" y="434">动作前检查唯一性、可见性、遮挡和命中点，必要时安全降级到坐标点击</text>
+
+  <path class="line" d="M444 361 L492 361" />
+  <path class="line" d="M852 361 L900 361" />
+  <path class="line" d="M1260 361 L1308 361" />
+
+  <rect class="lane-p1" x="56" y="514" width="1688" height="364" rx="24" ry="24" />
+  <text class="lane-title" x="84" y="556">P1 行为链拆分</text>
+  <text class="lane-sub" x="84" y="580">P1 主线已基本落地；当前保留为改造记录，方便继续核对实现与文档是否一致。</text>
+
+  <rect class="card" x="84" y="610" width="500" height="210" />
+  <rect class="badge-p1" x="108" y="632" width="58" height="28" rx="10" ry="10" />
+  <text class="badge-text" x="122" y="651">P1-1</text>
+  <text class="card-title" x="188" y="652">把 action-observer 拆成两层</text>
+  <text class="card-strong" x="108" y="688">修改文件</text>
+  <text class="card-sub" x="108" y="712">action-execution-usecases.ts -> observation/* + judgement/*</text>
+  <text class="card-strong" x="108" y="742">改造点</text>
+  <text class="card-sub" x="108" y="766">observeAction 只采证据；evaluateAction 只做判定；retry policy 单独决策，并消费 target/session 事件</text>
+  <text class="card-strong" x="108" y="796">收益</text>
+  <text class="card-sub" x="108" y="820">失败能明确落到 target_not_hit / stale_binding / blocked / wrong_target</text>
+
+  <rect class="card" x="650" y="610" width="500" height="210" />
+  <rect class="badge-p1" x="674" y="632" width="58" height="28" rx="10" ry="10" />
+  <text class="badge-text" x="688" y="651">P1-2</text>
+  <text class="card-title" x="754" y="652">pageState 改成页面信号</text>
+  <text class="card-strong" x="674" y="688">修改文件</text>
+  <text class="card-sub" x="674" y="712">page-state.ts / observation/page-signals.ts / overlay-tools.ts</text>
+  <text class="card-strong" x="674" y="742">改造点</text>
+  <text class="card-sub" x="674" y="766">verification / auth / overlay 只作为 signal；popup / new_target / target_switched 进入统一证据层</text>
+  <text class="card-strong" x="674" y="796">收益</text>
+  <text class="card-sub" x="674" y="820">减少误判把整个动作链带偏的问题</text>
+
+  <rect class="card" x="1216" y="610" width="500" height="210" />
+  <rect class="badge-p1" x="1240" y="632" width="58" height="28" rx="10" ry="10" />
+  <text class="badge-text" x="1254" y="651">P1-3</text>
+  <text class="card-title" x="1320" y="652">plan 已接稳定目标并开始闭环</text>
+  <text class="card-strong" x="1240" y="688">修改文件</text>
+  <text class="card-sub" x="1240" y="712">inspection-usecases.ts / overlay-usecases.ts / submit-usecases.ts / result-usecases.ts / media-usecases.ts</text>
+  <text class="card-strong" x="1240" y="742">改造点</text>
+  <text class="card-sub" x="1240" y="766">submit / openResult / dismiss / playMedia 已带 PlanTargetRef，并开始 target-first 执行</text>
+  <text class="card-strong" x="1240" y="796">收益</text>
+  <text class="card-sub" x="1240" y="820">plan 不再只返回建议，而是开始闭环到新执行主路径</text>
+
+  <path class="line" d="M584 714 L650 714" />
+  <path class="line" d="M1150 714 L1216 714" />
+
+  <rect class="lane-p2" x="56" y="916" width="1688" height="278" rx="24" ry="24" />
+  <text class="lane-title" x="84" y="958">P2 验证与回归</text>
+  <text class="lane-sub" x="84" y="982">当前重点：基于新架构跑真实站点回归，验证 target-first 与 stable rebind 在实战中的稳定性。</text>
+
+  <rect class="card" x="84" y="1014" width="760" height="146" />
+  <rect class="badge-p2" x="108" y="1036" width="58" height="28" rx="10" ry="10" />
+  <text class="badge-text" x="122" y="1055">P2-1</text>
+  <text class="card-title" x="188" y="1056">真实站点任务执行与报告</text>
+  <text class="card-strong" x="108" y="1092">修改文件</text>
+  <text class="card-sub" x="108" y="1116">scripts/run-web-task.* / src/testing/* / tests/reports/*</text>
+  <text class="card-strong" x="108" y="1144">改造点</text>
+  <text class="card-sub" x="108" y="1168">统一输出 ActionAttempt、OutcomeEvidence、ActionDecision、截图、console、network</text>
+
+  <rect class="card" x="910" y="1014" width="806" height="146" />
+  <rect class="badge-p2" x="934" y="1036" width="58" height="28" rx="10" ry="10" />
+  <text class="badge-text" x="948" y="1055">P2-2</text>
+  <text class="card-title" x="1014" y="1056">真实站点回归矩阵与最终验收</text>
+  <text class="card-strong" x="934" y="1092">关联文件</text>
+  <text class="card-sub" x="934" y="1116">verify-plan-smoke.mjs / tests/web-tasks/*.json / docs/testing/public-web-test-scenario-matrix.md</text>
+  <text class="card-strong" x="934" y="1144">目标</text>
+  <text class="card-sub" x="934" y="1168">覆盖搜索、同页刷新、新标签、详情页、媒体播放、抓取汇总 6 类真实场景</text>
+
+  <text class="note" x="84" y="1212">当前状态：P0/P1 主线已完成，P2 是剩余主任务；下一步不再继续拆层，而是用真实站点回归验证新主路径。</text>
+</svg>

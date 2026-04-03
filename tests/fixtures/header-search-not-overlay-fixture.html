@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Header Search Not Overlay Fixture</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 24px;
+        border-bottom: 1px solid #d0d7de;
+      }
+
+      .search-input-container.search-with-dialog.position-relative {
+        display: inline-flex;
+        align-items: center;
+        width: 180px;
+        height: 36px;
+        border: 1px solid #d0d7de;
+        border-radius: 8px;
+      }
+
+      .header-search-button {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: transparent;
+        text-align: left;
+        padding: 0 12px;
+      }
+
+      main {
+        padding: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <header role="banner">
+      <div>站点标题</div>
+      <div class="search-input-container search-with-dialog position-relative">
+        <button
+          class="header-search-button"
+          type="button"
+          aria-label="Search or jump to…"
+        >
+          Search or jump to…
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <h1>普通页面正文</h1>
+      <p>这个页头搜索控件不应被识别成遮挡层。</p>
+    </main>
+  </body>
+</html>

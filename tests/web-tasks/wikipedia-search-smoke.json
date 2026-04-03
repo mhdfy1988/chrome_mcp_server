@@ -1,4 +1,4 @@
-{
+﻿{
   "taskName": "wikipedia-search-smoke",
   "baseUrl": "https://www.wikipedia.org/",
   "goal": "验证公开百科网站首页搜索是否能进入目标词条页面，并记录导航结果。",
@@ -104,6 +104,7 @@
       "domObservation",
       "screenshotPath"
     ],
-    "useTemplate": "docs/bug-report-template.md"
+    "useTemplate": "docs/templates/bug-report-template.md"
   }
 }
+

@@ -1,4 +1,4 @@
-{
+﻿{
   "taskName": "generic-login-logout-smoke",
   "baseUrl": "<LOGIN_PAGE_URL>",
   "goal": "验证登录成功、用户态可见、退出后返回登录页的基础链路。",
@@ -139,6 +139,7 @@
       "domObservation",
       "screenshotPath"
     ],
-    "useTemplate": "docs/bug-report-template.md"
+    "useTemplate": "docs/templates/bug-report-template.md"
   }
 }
+

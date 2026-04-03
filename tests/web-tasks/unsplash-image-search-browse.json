@@ -1,4 +1,4 @@
-{
+﻿{
   "taskName": "unsplash-image-search-browse",
   "baseUrl": "https://unsplash.com/",
   "goal": "验证图片站首页搜索、结果页浏览和图片详情页打开流程。",
@@ -136,6 +136,7 @@
       "domObservation",
       "screenshotPath"
     ],
-    "useTemplate": "docs/bug-report-template.md"
+    "useTemplate": "docs/templates/bug-report-template.md"
   }
 }
+

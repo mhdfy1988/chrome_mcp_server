@@ -1,4 +1,4 @@
-{
+﻿{
   "taskName": "wikipedia-table-extract-report",
   "baseUrl": "https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)",
   "goal": "验证表格型页面的数据提取，并把前几行汇总成 Markdown 报告。",
@@ -63,7 +63,7 @@
       "domObservation",
       "screenshotPath"
     ],
-    "useTemplate": "docs/bug-report-template.md"
+    "useTemplate": "docs/templates/bug-report-template.md"
   },
   "output": {
     "kind": "markdown_table",
@@ -76,3 +76,4 @@
     "limit": 5
   }
 }
+

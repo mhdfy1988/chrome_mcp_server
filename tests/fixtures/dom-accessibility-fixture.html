@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DOM Accessibility Fixture</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f4ef;
+        --panel: #ffffff;
+        --ink: #1f1a16;
+        --muted: #6c645a;
+        --accent: #1f6feb;
+        --line: rgba(31, 26, 22, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top right, rgba(31, 111, 235, 0.14), transparent 32%),
+          linear-gradient(180deg, #fbfaf7 0%, var(--bg) 100%);
+      }
+
+      .shell {
+        width: min(960px, calc(100vw - 48px));
+        margin: 0 auto;
+        padding: 36px 0 72px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: var(--panel);
+        padding: 24px;
+        box-shadow: 0 18px 40px rgba(31, 26, 22, 0.08);
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        margin-top: 18px;
+      }
+
+      label {
+        font-size: 14px;
+        color: var(--muted);
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      input,
+      button {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+
+      button {
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .ghost {
+        background: transparent;
+        color: var(--ink);
+        border: 1px dashed var(--line);
+      }
+
+      .role-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        padding: 10px 16px;
+        font-weight: 600;
+        cursor: pointer;
+        background: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="panel">
+        <h1>无障碍语义夹具</h1>
+        <p class="lead">
+          这里刻意混合了 label、aria-label、role="button" 等语义标记，
+          用于验证元素发现时的可访问名称与标签绑定。
+        </p>
+
+        <div class="row">
+          <div>
+            <label for="search-input">搜索关键词</label>
+            <input
+              id="search-input"
+              name="keyword"
+              placeholder="请输入关键词"
+              type="text"
+            />
+          </div>
+          <div>
+            <label for="email-input">邮箱地址</label>
+            <input
+              id="email-input"
+              name="email"
+              type="email"
+              aria-label="订阅邮件"
+              placeholder="name@example.com"
+            />
+          </div>
+        </div>
+
+        <div class="row">
+          <button type="button">提交查询</button>
+          <button type="button" class="ghost">清空</button>
+        </div>
+
+        <div style="margin-top: 18px">
+          <div
+            class="role-button"
+            role="button"
+            aria-label="自定义按钮"
+            tabindex="0"
+          >
+            自定义按钮
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

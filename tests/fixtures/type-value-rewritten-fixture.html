@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Type Value Rewritten Fixture</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f3ee;
+        --panel: #ffffff;
+        --ink: #201a16;
+        --muted: #6b665f;
+        --line: rgba(32, 26, 22, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(245, 158, 11, 0.12), transparent 28%),
+          linear-gradient(180deg, #fcfaf8 0%, var(--bg) 100%);
+      }
+
+      .shell {
+        width: min(860px, calc(100vw - 48px));
+        margin: 0 auto;
+        padding: 40px 0 72px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--panel);
+        padding: 28px;
+        box-shadow: 0 16px 36px rgba(32, 26, 22, 0.08);
+      }
+
+      label {
+        display: block;
+        font-size: 14px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+
+      input {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+
+      .result {
+        margin-top: 18px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: rgba(245, 158, 11, 0.08);
+        color: #92400e;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="panel">
+        <h1>输入值被改写夹具</h1>
+        <p>
+          页面会把输入内容自动改写成大写。
+          预期结果是：输入动作本身成功，但最终值校验失败，错误里能看到实际值。
+        </p>
+
+        <label for="rewrite-input">会被改写的输入框</label>
+        <input id="rewrite-input" type="text" />
+
+        <div id="rewrite-status" class="result">状态：IDLE</div>
+      </section>
+    </main>
+
+    <script>
+      const input = document.getElementById("rewrite-input");
+      const status = document.getElementById("rewrite-status");
+
+      input?.addEventListener("input", () => {
+        input.value = input.value.toUpperCase();
+        status.textContent = `状态：REWRITTEN_${input.value}`;
+      });
+    </script>
+  </body>
+</html>

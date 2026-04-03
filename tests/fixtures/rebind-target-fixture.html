@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>rebind target fixture</title>
+    <style>
+      body {
+        font-family: "Microsoft YaHei", sans-serif;
+        padding: 32px;
+      }
+
+      .panel {
+        max-width: 420px;
+        padding: 20px;
+        border: 1px solid #d9d9d9;
+        border-radius: 12px;
+      }
+
+      button {
+        padding: 10px 16px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="panel">
+      <h1>稳定重绑定测试</h1>
+      <p id="status">waiting</p>
+      <button id="old-bind-target" type="button">重新绑定按钮</button>
+      <p id="result"></p>
+    </main>
+
+    <script>
+      const button = document.getElementById("old-bind-target");
+      const status = document.getElementById("status");
+      const result = document.getElementById("result");
+
+      button?.addEventListener("click", () => {
+        result.textContent = "REBOUND_OK";
+      });
+
+      setTimeout(() => {
+        if (button) {
+          button.id = "new-bind-target";
+        }
+        if (status) {
+          status.textContent = "selector-rebound";
+        }
+      }, 300);
+    </script>
+  </body>
+</html>

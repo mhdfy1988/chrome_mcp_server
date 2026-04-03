@@ -1,4 +1,4 @@
-# 网页测试任务样例清单
+﻿# 网页测试任务样例清单
 
 当前目录里的任务样例分成两类：
 
@@ -51,6 +51,7 @@
 ## 使用建议
 
 1. 先从公开网站样例里挑一个跑通，验证任务规范和报告链路。
-2. 如果要补图片 / 视频 / 文档 / 榜单这几类站型，可以先看 [public-web-test-scenario-matrix.md](/d:/C_Project/chrome_mcp_server/docs/public-web-test-scenario-matrix.md)。
+2. 如果要补图片 / 视频 / 文档 / 榜单这几类站型，可以先看 [public-web-test-scenario-matrix.md](/D:/C_Project/chrome_mcp_server/docs/testing/public-web-test-scenario-matrix.md)。
 3. 再从通用模板复制一份，改成你自己的页面入口、目标元素提示和成功信号。
 4. 对真实业务系统，一定先补 `forbiddenActions`，避免高风险操作。
+

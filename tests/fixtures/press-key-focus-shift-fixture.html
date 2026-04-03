@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Press Key Focus Shift Fixture</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f4ef;
+        --panel: #ffffff;
+        --ink: #201a16;
+        --muted: #6b665f;
+        --line: rgba(32, 26, 22, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top right, rgba(16, 185, 129, 0.12), transparent 28%),
+          linear-gradient(180deg, #fcfbf8 0%, var(--bg) 100%);
+      }
+
+      .shell {
+        width: min(860px, calc(100vw - 48px));
+        margin: 0 auto;
+        padding: 40px 0 72px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--panel);
+        padding: 28px;
+        box-shadow: 0 16px 36px rgba(32, 26, 22, 0.08);
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 20px;
+      }
+
+      label {
+        display: block;
+        font-size: 14px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+
+      input {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+
+      .result {
+        margin-top: 18px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: rgba(16, 185, 129, 0.08);
+        color: #166534;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="panel">
+        <h1>按键切换焦点夹具</h1>
+        <p>
+          页面初始焦点在第一个输入框，按 `Tab` 后应切到第二个输入框。
+          预期回执里 `focusChanged=true`。
+        </p>
+
+        <div class="row">
+          <div>
+            <label for="tab-first">第一个输入框</label>
+            <input id="tab-first" type="text" autofocus />
+          </div>
+          <div>
+            <label for="tab-second">第二个输入框</label>
+            <input id="tab-second" type="text" />
+          </div>
+        </div>
+
+        <div id="press-key-status" class="result">状态：READY</div>
+      </section>
+    </main>
+
+    <script>
+      const first = document.getElementById("tab-first");
+      const second = document.getElementById("tab-second");
+      const status = document.getElementById("press-key-status");
+
+      const updateStatus = () => {
+        if (document.activeElement === second) {
+          status.textContent = "状态：TAB_MOVED";
+          return;
+        }
+
+        if (document.activeElement === first) {
+          status.textContent = "状态：FIRST_ACTIVE";
+          return;
+        }
+
+        status.textContent = "状态：OTHER_ACTIVE";
+      };
+
+      document.addEventListener("focusin", updateStatus);
+      window.addEventListener("load", () => {
+        first?.focus();
+        updateStatus();
+      });
+    </script>
+  </body>
+</html>

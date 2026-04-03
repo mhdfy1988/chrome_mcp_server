@@ -1,4 +1,4 @@
-{
+﻿{
   "taskName": "generic-list-filter-refresh",
   "baseUrl": "<LIST_PAGE_URL>",
   "goal": "验证列表页切换筛选条件后，结果区是否在同页正确刷新。",
@@ -92,6 +92,7 @@
       "domObservation",
       "screenshotPath"
     ],
-    "useTemplate": "docs/bug-report-template.md"
+    "useTemplate": "docs/templates/bug-report-template.md"
   }
 }
+

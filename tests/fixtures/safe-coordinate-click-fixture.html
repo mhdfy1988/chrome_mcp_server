@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Safe Coordinate Click Fixture</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f3ee;
+        --panel: #ffffff;
+        --ink: #201a16;
+        --muted: #6f655c;
+        --accent: #1d4ed8;
+        --line: rgba(32, 26, 22, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top right, rgba(29, 78, 216, 0.15), transparent 28%),
+          linear-gradient(180deg, #fcfbf8 0%, var(--bg) 100%);
+      }
+
+      .shell {
+        width: min(920px, calc(100vw - 48px));
+        margin: 0 auto;
+        padding: 40px 0 72px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--panel);
+        padding: 28px;
+        box-shadow: 0 18px 40px rgba(32, 26, 22, 0.08);
+      }
+
+      .target-wrap {
+        position: relative;
+        width: 320px;
+        margin-top: 24px;
+      }
+
+      .target-button {
+        width: 320px;
+        height: 86px;
+        border: 0;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+        color: #fff;
+        font-size: 18px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .center-blocker {
+        position: absolute;
+        inset: 18px 90px;
+        border-radius: 16px;
+        background: rgba(15, 23, 42, 0.18);
+        border: 1px dashed rgba(15, 23, 42, 0.28);
+        pointer-events: auto;
+      }
+
+      .result {
+        margin-top: 20px;
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: rgba(29, 78, 216, 0.08);
+        color: #1e3a8a;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="panel">
+        <h1>安全坐标点击夹具</h1>
+        <p>
+          中心区域被遮住，但按钮左右两侧仍可点击。预期行为是：
+          预检发现中心点未命中目标后，改用安全坐标点击可用边缘区域。
+        </p>
+
+        <div class="target-wrap">
+          <button id="edge-click-target" class="target-button" type="button">
+            请点击我
+          </button>
+          <div
+            id="center-blocker"
+            class="center-blocker"
+            aria-hidden="true"
+          ></div>
+        </div>
+
+        <div id="edge-click-result" class="result">状态：IDLE</div>
+      </section>
+    </main>
+
+    <script>
+      const target = document.getElementById("edge-click-target");
+      const result = document.getElementById("edge-click-result");
+      const blocker = document.getElementById("center-blocker");
+
+      target?.addEventListener("click", (event) => {
+        const rect = target.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const blockedZoneStart = 90;
+        const blockedZoneEnd = rect.width - 90;
+
+        if (x >= blockedZoneStart && x <= blockedZoneEnd) {
+          result.textContent = "状态：CENTER_BLOCKED";
+          return;
+        }
+
+        document.body.dataset.edgeClickDone = "1";
+        result.textContent = "状态：SAFE_EDGE_OK";
+      });
+
+      blocker?.addEventListener("click", (event) => {
+        event.stopPropagation();
+        result.textContent = "状态：CENTER_BLOCKER_HIT";
+      });
+    </script>
+  </body>
+</html>

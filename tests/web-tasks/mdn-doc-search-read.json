@@ -1,4 +1,4 @@
-{
+﻿{
   "taskName": "mdn-doc-search-read",
   "baseUrl": "https://developer.mozilla.org/zh-CN/",
   "goal": "验证文档站的搜索、文章打开和正文提取流程。",
@@ -131,7 +131,7 @@
       "domObservation",
       "screenshotPath"
     ],
-    "useTemplate": "docs/bug-report-template.md"
+    "useTemplate": "docs/templates/bug-report-template.md"
   },
   "output": {
     "kind": "markdown_summary",
@@ -144,3 +144,4 @@
     ]
   }
 }
+

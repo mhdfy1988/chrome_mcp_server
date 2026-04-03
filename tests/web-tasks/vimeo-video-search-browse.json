@@ -1,4 +1,4 @@
-{
+﻿{
   "taskName": "vimeo-video-search-browse",
   "baseUrl": "https://vimeo.com/",
   "goal": "验证公开视频站的搜索、结果列表和视频详情页打开流程。",
@@ -143,6 +143,7 @@
       "domObservation",
       "screenshotPath"
     ],
-    "useTemplate": "docs/bug-report-template.md"
+    "useTemplate": "docs/templates/bug-report-template.md"
   }
 }
+

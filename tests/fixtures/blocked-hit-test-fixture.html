@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blocked Hit Test Fixture</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f2ef;
+        --panel: #ffffff;
+        --ink: #201a16;
+        --muted: #6f655c;
+        --accent: #b42318;
+        --line: rgba(32, 26, 22, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(180, 35, 24, 0.12), transparent 30%),
+          linear-gradient(180deg, #fcfaf8 0%, var(--bg) 100%);
+      }
+
+      .shell {
+        width: min(920px, calc(100vw - 48px));
+        margin: 0 auto;
+        padding: 40px 0 72px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--panel);
+        padding: 28px;
+        box-shadow: 0 18px 40px rgba(32, 26, 22, 0.08);
+      }
+
+      .target-wrap {
+        position: relative;
+        width: 320px;
+        margin-top: 24px;
+      }
+
+      .blocked-button {
+        width: 320px;
+        height: 86px;
+        border: 0;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #b42318 0%, #dc2626 100%);
+        color: #fff;
+        font-size: 18px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .full-blocker {
+        position: absolute;
+        inset: 0;
+        border-radius: 20px;
+        background: rgba(15, 23, 42, 0.28);
+        border: 1px dashed rgba(15, 23, 42, 0.32);
+        pointer-events: auto;
+      }
+
+      .result {
+        margin-top: 20px;
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: rgba(180, 35, 24, 0.08);
+        color: #991b1b;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="panel">
+        <h1>命中被遮挡夹具</h1>
+        <p>
+          这个按钮被完整覆盖，没有任何安全点击点。预期行为是：
+          预检直接识别出遮挡来源，而不是盲点。
+        </p>
+
+        <div class="target-wrap">
+          <button id="blocked-target" class="blocked-button" type="button">
+            被完全挡住的按钮
+          </button>
+          <div id="full-blocker" class="full-blocker"></div>
+        </div>
+
+        <div id="blocked-result" class="result">状态：尚未触发</div>
+      </section>
+    </main>
+
+    <script>
+      const blockedTarget = document.getElementById("blocked-target");
+      const blocker = document.getElementById("full-blocker");
+      const result = document.getElementById("blocked-result");
+
+      blockedTarget?.addEventListener("click", () => {
+        document.body.dataset.blockedTargetClicked = "1";
+        result.textContent = "状态：目标按钮被触发。";
+      });
+
+      blocker?.addEventListener("click", (event) => {
+        event.stopPropagation();
+        result.textContent = "状态：命中遮挡层，目标按钮未触发。";
+      });
+    </script>
+  </body>
+</html>

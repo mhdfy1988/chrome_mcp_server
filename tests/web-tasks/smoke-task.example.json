@@ -1,4 +1,4 @@
-{
+﻿{
   "taskName": "site-search-smoke",
   "baseUrl": "https://example.com",
   "goal": "验证站点首页搜索流程是否按预期工作，并在偏差发生时留下结构化证据。",
@@ -113,6 +113,7 @@
       "domObservation",
       "screenshotPath"
     ],
-    "useTemplate": "docs/bug-report-template.md"
+    "useTemplate": "docs/templates/bug-report-template.md"
   }
 }
+

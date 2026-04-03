@@ -1,4 +1,4 @@
-{
+﻿{
   "taskName": "bilibili-search-smoke",
   "baseUrl": "https://www.bilibili.com/",
   "goal": "验证真实内容站点首页搜索是否能进入搜索结果，并兼容同页/新页两种结果形态。",
@@ -112,6 +112,7 @@
       "domObservation",
       "screenshotPath"
     ],
-    "useTemplate": "docs/bug-report-template.md"
+    "useTemplate": "docs/templates/bug-report-template.md"
   }
 }
+

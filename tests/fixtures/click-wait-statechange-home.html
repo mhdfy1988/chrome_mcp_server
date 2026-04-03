@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>click-wait-statechange-home</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>人工智能</h1>
+    <p>这个页面用于复现“点击后页面已切换，但旧 selector 会在重试里挂住”的场景。</p>
+    <button
+      id="go-target"
+      type="button"
+      onclick="location.href = './click-wait-statechange-target.html#done';"
+    >
+      打开目标页
+    </button>
+  </body>
+</html>

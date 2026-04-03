@@ -1,4 +1,4 @@
-{
+﻿{
   "taskName": "hackernews-toplist-scrape-report",
   "baseUrl": "https://news.ycombinator.com/",
   "goal": "验证榜单型页面的数据抓取，并将前 10 条结果汇总为 Markdown 文档。",
@@ -64,7 +64,7 @@
       "domObservation",
       "screenshotPath"
     ],
-    "useTemplate": "docs/bug-report-template.md"
+    "useTemplate": "docs/templates/bug-report-template.md"
   },
   "output": {
     "kind": "markdown_table",
@@ -79,3 +79,4 @@
     "limit": 10
   }
 }
+

@@ -1,4 +1,4 @@
-{
+﻿{
   "taskName": "generic-scrape-and-summary-report",
   "baseUrl": "https://example.com/list",
   "goal": "通用列表页数据抓取与 Markdown 汇总模板，适合改造成内部榜单、公告、资料目录等页面。",
@@ -78,7 +78,7 @@
       "domObservation",
       "screenshotPath"
     ],
-    "useTemplate": "docs/bug-report-template.md"
+    "useTemplate": "docs/templates/bug-report-template.md"
   },
   "output": {
     "kind": "markdown_table",
@@ -92,3 +92,4 @@
     "limit": 20
   }
 }
+
