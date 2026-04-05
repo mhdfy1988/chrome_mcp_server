@@ -2,6 +2,7 @@ import type { Page } from "puppeteer-core";
 import type { BrowserRuntimeDeps } from "../session/runtime-deps.js";
 import type { BindingRecord } from "../binding/binding-record.js";
 import { evaluateWithDomHelpers } from "../core/dom-helpers.js";
+import { BrowserToolError } from "../../errors.js";
 import type { TargetPreflightSummary } from "./types.js";
 import { resolveSelectorFromBinding } from "./rebind-target.js";
 
@@ -42,7 +43,10 @@ export async function resolveActionTargetWithPreflight(
   }
 
   if (!selector) {
-    throw new Error("selector 和 ref 至少要提供一个。");
+    throw new BrowserToolError(
+      "invalid_operation",
+      "selector 和 ref 至少要提供一个。",
+    );
   }
 
   const preflight = await runTargetPreflight(page, {
@@ -56,8 +60,13 @@ export async function resolveActionTargetWithPreflight(
   });
 
   if (!preflight.exists) {
-    throw new Error(
+    throw new BrowserToolError(
+      "invalid_operation",
       `目标预检失败：当前页面找不到目标元素（selector: ${selector}）。请重新执行 page_snapshot 或 find_elements 获取最新目标。`,
+      {
+        selector,
+        ref: options.ref,
+      },
     );
   }
 

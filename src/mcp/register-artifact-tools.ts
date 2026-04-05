@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod/v4";
 import { BrowserManager } from "../browser-manager.js";
-import { textResult } from "./shared.js";
+import { toolHandler, toolResultHandler } from "./shared.js";
 
 export function registerArtifactTools(
   server: McpServer,
@@ -51,7 +51,7 @@ export function registerArtifactTools(
           }
         }),
     },
-    async ({ pageId, ref, selector, fullPage, format, quality, savePath }) => {
+    toolResultHandler(async ({ pageId, ref, selector, fullPage, format, quality, savePath }) => {
       const result = await browserManager.screenshot({
         pageId,
         ref,
@@ -83,7 +83,7 @@ export function registerArtifactTools(
           },
         ],
       };
-    },
+    }),
   );
 
   server.registerTool(
@@ -105,8 +105,9 @@ export function registerArtifactTools(
         idempotentHint: true,
       },
     },
-    async ({ pageId, limit }) =>
-      textResult(await browserManager.getConsoleLogs(pageId, limit)),
+    toolHandler(async ({ pageId, limit }) =>
+      browserManager.getConsoleLogs(pageId, limit),
+    ),
   );
 
   server.registerTool(
@@ -128,7 +129,8 @@ export function registerArtifactTools(
         idempotentHint: true,
       },
     },
-    async ({ pageId, limit }) =>
-      textResult(await browserManager.getNetworkLogs(pageId, limit)),
+    toolHandler(async ({ pageId, limit }) =>
+      browserManager.getNetworkLogs(pageId, limit),
+    ),
   );
 }

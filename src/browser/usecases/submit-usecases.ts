@@ -1,4 +1,5 @@
 import type { WaitUntilMode } from "../../config.js";
+import { BrowserToolError } from "../../errors.js";
 import type { BrowserRuntimeDeps } from "../session/runtime-deps.js";
 import type { BrowserInspectionUsecaseDeps } from "./inspection-usecases.js";
 import { findSubmitTargetsWithRuntime } from "./inspection-usecases.js";
@@ -351,7 +352,10 @@ export async function submitWithPlanWithRuntime(
     : options.selector;
 
   if (!selector) {
-    throw new Error("selector 和 ref 至少要提供一个。");
+    throw new BrowserToolError(
+      "invalid_operation",
+      "selector 和 ref 至少要提供一个。",
+    );
   }
 
   const timeoutMs = options.timeoutMs ?? deps.config.stepTimeoutMs;
@@ -374,7 +378,10 @@ export async function submitWithPlanWithRuntime(
   );
 
   if (submitPlan.length === 0) {
-    throw new Error("当前输入框未生成可执行的提交计划。");
+    throw new BrowserToolError(
+      "invalid_operation",
+      "当前输入框未生成可执行的提交计划。",
+    );
   }
 
   const verifications = buildSubmitPlanVerifications(options);
@@ -420,7 +427,10 @@ export async function submitWithPlanWithRuntime(
           }
 
           if (!step.selector) {
-            throw new Error("点击方案缺少 selector。");
+            throw new BrowserToolError(
+              "invalid_operation",
+              "点击方案缺少 selector。",
+            );
           }
 
           const target = await resolvePlanActionTarget(deps, page, step);
@@ -519,7 +529,8 @@ export async function submitWithPlanWithRuntime(
     }
   }
 
-  throw new Error(
+  throw new BrowserToolError(
+    "action_verification_failed",
     `按提交计划尝试后仍未成功：${attempts
       .map((attempt) => {
         const target = attempt.selector ? `(${attempt.selector})` : "";
@@ -527,6 +538,10 @@ export async function submitWithPlanWithRuntime(
         return `${attempt.method}${target}${note}`;
       })
       .join(" | ")}`,
+    {
+      attempts,
+      planLength: submitPlan.length,
+    },
   );
 }
 

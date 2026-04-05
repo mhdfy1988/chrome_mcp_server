@@ -1,7 +1,7 @@
 import path from "node:path";
 import process from "node:process";
+import puppeteer from "puppeteer-core";
 import { BrowserManager } from "../dist/browser-manager.js";
-import { resolveActionTargetWithPreflight } from "../dist/browser/execution/target-preflight.js";
 
 const repoRoot = process.cwd();
 const toFileUrl = (filePath) => `file:///${filePath.replace(/\\/g, "/")}`;
@@ -442,13 +442,10 @@ try {
       path.resolve(repoRoot, "tests/fixtures/blocked-hit-test-fixture.html"),
     ),
   );
-  const blockedPreflight = await resolveActionTargetWithPreflight(
-    browserManager.runtimeDeps,
-    {
-      pageId: blockedPage.pageId,
-      selector: "#blocked-target",
-    },
-  );
+  const blockedPreflight = await browserManager.resolveActionTargetPreflight({
+    pageId: blockedPage.pageId,
+    selector: "#blocked-target",
+  });
   let blockedClickError = null;
   try {
     await browserManager.click({
@@ -463,6 +460,68 @@ try {
     preflight: blockedPreflight.preflight,
     clickError: blockedClickError,
   };
+
+  const externalBrowser = await puppeteer.launch({
+    channel: "chrome",
+    headless: true,
+    defaultViewport: null,
+    userDataDir: path.resolve(repoRoot, ".profiles/active/plan-smoke-external"),
+  });
+  try {
+    const externalManager = new BrowserManager({
+      channel: "chrome",
+      browserWSEndpoint: externalBrowser.wsEndpoint(),
+      headless: true,
+      userDataDir: path.resolve(
+        repoRoot,
+        ".profiles/active/plan-smoke-external-manager",
+      ),
+      defaultTimeoutMs: 15000,
+      navigationTimeoutMs: 30000,
+      stepTimeoutMs: 6000,
+      maxRetries: 0,
+      retryBackoffMs: 1,
+      actionSettleDelayMs: 0,
+      followupWatchTimeoutMs: 800,
+    });
+
+    const externalStatusBefore = await externalManager.getStatus();
+    const externalPage = await externalManager.openPage(
+      toFileUrl(path.resolve(repoRoot, "tests/fixtures/dom-accessibility-fixture.html")),
+    );
+    let externalClosePageError = null;
+
+    try {
+      await externalManager.closePage(externalPage.pageId);
+    } catch (error) {
+      externalClosePageError = error instanceof Error ? error.message : String(error);
+    }
+
+    const externalCloseBrowserStatus = await externalManager.closeBrowser();
+    let externalBrowserStillAlive = false;
+
+    try {
+      await externalBrowser.version();
+      externalBrowserStillAlive = true;
+    } catch {
+      externalBrowserStillAlive = false;
+    }
+
+    report.externalBrowserSafety = {
+      statusBefore: {
+        browserMode: externalStatusBefore.browserMode,
+        safetyPolicy: externalStatusBefore.safetyPolicy,
+      },
+      closePageError: externalClosePageError,
+      closeBrowserStatus: {
+        connected: externalCloseBrowserStatus.connected,
+        note: externalCloseBrowserStatus.note ?? null,
+      },
+      externalBrowserStillAlive,
+    };
+  } finally {
+    await externalBrowser.close().catch(() => {});
+  }
 
   const typeFocusPage = await browserManager.openPage(
     toFileUrl(
@@ -724,6 +783,18 @@ try {
     blockedClickRejected:
       typeof blockedClickError === "string" &&
       blockedClickError.includes("目标点击预检失败"),
+    externalBrowserOwnershipDetected:
+      report.externalBrowserSafety?.statusBefore?.browserMode === "connect_ws_endpoint" &&
+      report.externalBrowserSafety?.statusBefore?.safetyPolicy?.browserOwnership ===
+        "external",
+    externalClosePageBlocked:
+      typeof report.externalBrowserSafety?.closePageError === "string" &&
+      report.externalBrowserSafety.closePageError.includes(
+        "close_page 已被安全策略阻止",
+      ),
+    externalCloseBrowserDisconnectOnly:
+      report.externalBrowserSafety?.closeBrowserStatus?.connected === false &&
+      report.externalBrowserSafety?.externalBrowserStillAlive === true,
     typeFocusShiftDetected:
       typeFocusResult.actionAttempt?.valueVerified === true &&
       typeFocusResult.actionAttempt?.activeElementMatched === false &&

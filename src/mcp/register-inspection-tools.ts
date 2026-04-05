@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod/v4";
 import { BrowserManager } from "../browser-manager.js";
 import type { ToolMode } from "../config.js";
-import { textResult, waitMatchModeSchema } from "./shared.js";
+import { toolHandler, waitMatchModeSchema } from "./shared.js";
 
 export function registerInspectionTools(
   server: McpServer,
@@ -53,16 +53,15 @@ export function registerInspectionTools(
         readOnlyHint: true,
       },
     },
-    async ({ pageId, ref, selector, mode, maxLength }) =>
-      textResult(
-        await browserManager.extractText({
-          pageId,
-          ref,
-          selector,
-          mode,
-          maxLength,
-        }),
-      ),
+    toolHandler(async ({ pageId, ref, selector, mode, maxLength }) =>
+      browserManager.extractText({
+        pageId,
+        ref,
+        selector,
+        mode,
+        maxLength,
+      }),
+    ),
   );
 
   server.registerTool(
@@ -92,14 +91,13 @@ export function registerInspectionTools(
         idempotentHint: true,
       },
     },
-    async ({ pageId, maxTextLength, maxElements }) =>
-      textResult(
-        await browserManager.pageSnapshot({
-          pageId,
-          maxTextLength,
-          maxElements,
-        }),
-      ),
+    toolHandler(async ({ pageId, maxTextLength, maxElements }) =>
+      browserManager.pageSnapshot({
+        pageId,
+        maxTextLength,
+        maxElements,
+      }),
+    ),
   );
 
   server.registerTool(
@@ -138,18 +136,17 @@ export function registerInspectionTools(
         idempotentHint: true,
       },
     },
-    async ({ pageId, query, matchMode, tag, role, maxResults, inspectLimit }) =>
-      textResult(
-        await browserManager.findElements({
-          pageId,
-          query,
-          matchMode,
-          tag,
-          role,
-          maxResults,
-          inspectLimit,
-        }),
-      ),
+    toolHandler(async ({ pageId, query, matchMode, tag, role, maxResults, inspectLimit }) =>
+      browserManager.findElements({
+        pageId,
+        query,
+        matchMode,
+        tag,
+        role,
+        maxResults,
+        inspectLimit,
+      }),
+    ),
   );
 
   server.registerTool(
@@ -191,15 +188,14 @@ export function registerInspectionTools(
         idempotentHint: true,
       },
     },
-    async ({ pageId, ref, selector, maxResults }) =>
-      textResult(
-        await browserManager.findSubmitTargets({
-          pageId,
-          ref,
-          selector,
-          maxResults,
-        }),
-      ),
+    toolHandler(async ({ pageId, ref, selector, maxResults }) =>
+      browserManager.findSubmitTargets({
+        pageId,
+        ref,
+        selector,
+        maxResults,
+      }),
+    ),
   );
 
   server.registerTool(
@@ -226,14 +222,13 @@ export function registerInspectionTools(
         idempotentHint: true,
       },
     },
-    async ({ pageId, query, maxResults }) =>
-      textResult(
-        await browserManager.findPrimaryResults({
-          pageId,
-          query,
-          maxResults,
-        }),
-      ),
+    toolHandler(async ({ pageId, query, maxResults }) =>
+      browserManager.findPrimaryResults({
+        pageId,
+        query,
+        maxResults,
+      }),
+    ),
   );
 
   server.registerTool(
@@ -260,14 +255,13 @@ export function registerInspectionTools(
         idempotentHint: true,
       },
     },
-    async ({ pageId, selector, maxResults }) =>
-      textResult(
-        await browserManager.readMediaState({
-          pageId,
-          selector,
-          maxResults,
-        }),
-      ),
+    toolHandler(async ({ pageId, selector, maxResults }) =>
+      browserManager.readMediaState({
+        pageId,
+        selector,
+        maxResults,
+      }),
+    ),
   );
 
   if (options.toolMode === "advanced") {
@@ -291,13 +285,12 @@ export function registerInspectionTools(
           idempotentHint: true,
         },
       },
-      async ({ pageId, maxResults }) =>
-        textResult(
-          await browserManager.findPrimaryInputs({
-            pageId,
-            maxResults,
-          }),
-        ),
+      toolHandler(async ({ pageId, maxResults }) =>
+        browserManager.findPrimaryInputs({
+          pageId,
+          maxResults,
+        }),
+      ),
     );
 
     server.registerTool(
@@ -312,8 +305,9 @@ export function registerInspectionTools(
             .describe("要在页面里执行的 JavaScript 表达式。"),
         }),
       },
-      async ({ pageId, expression }) =>
-        textResult(await browserManager.evaluate({ pageId, expression })),
+      toolHandler(async ({ pageId, expression }) =>
+        browserManager.evaluate({ pageId, expression }),
+      ),
     );
   }
 }

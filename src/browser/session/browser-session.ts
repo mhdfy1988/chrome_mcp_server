@@ -4,6 +4,7 @@ import puppeteer, {
   type Page,
 } from "puppeteer-core";
 import type { ChromeConfig } from "../../config.js";
+import { BrowserToolError } from "../../errors.js";
 import type {
   BrowserStatus,
   ConsoleLogEntry,
@@ -32,6 +33,7 @@ export class BrowserSession {
   private currentPageId?: string;
   private pageCounter = 1;
   private snapshotCounter = 1;
+  private statusNote?: string;
 
   public constructor(public readonly config: ChromeConfig) {}
 
@@ -46,6 +48,7 @@ export class BrowserSession {
       connected: Boolean(this.browser?.connected),
       browserMode: this.getBrowserMode(),
       launchedByManager: this.launchedByManager,
+      safetyPolicy: this.getSafetyPolicy(),
       headless: this.config.headless,
       defaultTimeoutMs: this.config.defaultTimeoutMs,
       navigationTimeoutMs: this.config.navigationTimeoutMs,
@@ -56,6 +59,7 @@ export class BrowserSession {
       followupWatchTimeoutMs: this.config.followupWatchTimeoutMs,
       userDataDir: this.config.userDataDir,
       pages,
+      note: this.statusNote,
     };
   }
 
@@ -100,8 +104,39 @@ export class BrowserSession {
   }
 
   public async closePage(pageId?: string): Promise<BrowserStatus> {
-    const page = await this.resolvePage(pageId);
-    const resolvedPageId = this.requirePageId(page);
+    if (this.usesExternalBrowser()) {
+      throw new BrowserToolError(
+        "external_page_close_blocked",
+        "当前会话连接的是外部浏览器实例，close_page 已被安全策略阻止，避免误关用户现有标签页。",
+      );
+    }
+
+    const browser = await this.ensureBrowser(false);
+    if (!browser) {
+      this.statusNote = "当前没有可关闭的浏览器会话。";
+      return this.getStatus();
+    }
+
+    await this.syncPages();
+
+    let resolvedPageId = pageId;
+    if (!resolvedPageId) {
+      resolvedPageId =
+        this.currentPageId && this.pages.has(this.currentPageId)
+          ? this.currentPageId
+          : this.pages.keys().next().value;
+    }
+
+    if (!resolvedPageId) {
+      this.statusNote = "当前没有可关闭的页面。";
+      return this.getStatus();
+    }
+
+    const page = this.pages.get(resolvedPageId);
+    if (!page) {
+      throw new Error(`找不到页面: ${resolvedPageId}`);
+    }
+
     await page.close();
 
     this.pages.delete(resolvedPageId);
@@ -115,12 +150,20 @@ export class BrowserSession {
     }
 
     await this.syncPages();
+    this.statusNote = undefined;
     return this.getStatus();
   }
 
   public async closeBrowser(): Promise<BrowserStatus> {
     if (this.browser?.connected) {
-      await this.browser.close();
+      if (this.launchedByManager) {
+        await this.browser.close();
+        this.statusNote = undefined;
+      } else {
+        await this.browser.disconnect();
+        this.statusNote =
+          "当前会话连接的是外部浏览器实例，本次 close_browser 仅断开 MCP 连接，没有关闭用户浏览器进程。";
+      }
     }
 
     this.browser = undefined;
@@ -137,7 +180,11 @@ export class BrowserSession {
 
   public async shutdown(): Promise<void> {
     if (this.browser?.connected) {
-      await this.browser.close();
+      if (this.launchedByManager) {
+        await this.browser.close();
+      } else {
+        await this.browser.disconnect();
+      }
     }
 
     this.browser = undefined;
@@ -194,6 +241,7 @@ export class BrowserSession {
     });
 
     this.browser = browser;
+    this.statusNote = undefined;
     await this.syncPages();
     return browser;
   }
@@ -449,6 +497,22 @@ export class BrowserSession {
     }
 
     return "launch";
+  }
+
+  private usesExternalBrowser(): boolean {
+    return this.getBrowserMode() !== "launch";
+  }
+
+  private getSafetyPolicy(): BrowserStatus["safetyPolicy"] {
+    return {
+      browserOwnership: this.usesExternalBrowser() ? "external" : "managed",
+      closeBrowserBehavior: this.usesExternalBrowser()
+        ? "disconnect_only"
+        : "close_browser_process",
+      closePageBehavior: this.usesExternalBrowser()
+        ? "block_close_page"
+        : "allow_close_page",
+    };
   }
 }
 

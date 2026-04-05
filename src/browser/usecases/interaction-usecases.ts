@@ -1,5 +1,6 @@
 import type { KeyInput, Page } from "puppeteer-core";
 import type { WaitUntilMode } from "../../config.js";
+import { BrowserToolError } from "../../errors.js";
 import { evaluateWithDomHelpers } from "../core/dom-helpers.js";
 import type { BrowserRuntimeDeps } from "../session/runtime-deps.js";
 import type {
@@ -138,6 +139,7 @@ export async function clickAndWaitWithRuntime(
     },
     {
       timeoutMs: options.timeoutMs,
+      maxRetries: 0,
       waitForNavigation: shouldWaitForNavigation,
       waitUntil: options.waitUntil,
       waitForSelector: options.waitForSelector,
@@ -252,6 +254,7 @@ export async function typeTextWithRuntime(
     },
     {
       timeoutMs: options.timeoutMs,
+      maxRetries: 0,
       requireObservedChange: false,
       verifications: [
         {
@@ -279,9 +282,13 @@ export async function typeTextWithRuntime(
 
     const message =
       error instanceof Error ? error.message : String(error);
-    throw new Error(
-      `${message} | 输入证据：${evidenceParts.join(", ")}`,
-    );
+    const evidenceMessage = `${message} | 输入证据：${evidenceParts.join(", ")}`;
+
+    if (error instanceof BrowserToolError) {
+      throw new BrowserToolError(error.code, evidenceMessage, error.details);
+    }
+
+    throw new Error(evidenceMessage);
   });
 
   return {
@@ -400,6 +407,7 @@ export async function pressKeyAndWaitWithRuntime(
     },
     {
       timeoutMs: options.timeoutMs,
+      maxRetries: 0,
       waitForNavigation: shouldWaitForNavigation,
       waitUntil: options.waitUntil,
       waitForSelector: options.waitForSelector,

@@ -52,6 +52,11 @@ export interface BrowserStatus {
   connected: boolean;
   browserMode: "launch" | "connect_browser_url" | "connect_ws_endpoint";
   launchedByManager: boolean;
+  safetyPolicy: {
+    browserOwnership: "managed" | "external";
+    closeBrowserBehavior: "close_browser_process" | "disconnect_only";
+    closePageBehavior: "allow_close_page" | "block_close_page";
+  };
   headless: boolean;
   defaultTimeoutMs: number;
   navigationTimeoutMs: number;
@@ -62,6 +67,7 @@ export interface BrowserStatus {
   followupWatchTimeoutMs: number;
   userDataDir?: string;
   pages: PageSummary[];
+  note?: string;
 }
 
 export interface ConsoleLogEntry {

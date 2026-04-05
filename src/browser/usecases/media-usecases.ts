@@ -1,4 +1,5 @@
 import type { BrowserRuntimeDeps } from "../session/runtime-deps.js";
+import { BrowserToolError } from "../../errors.js";
 import type { BrowserInspectionUsecaseDeps } from "./inspection-usecases.js";
 import { readMediaStateWithRuntime } from "./inspection-usecases.js";
 import { resolvePlanActionTarget } from "./plan-target-resolution.js";
@@ -34,7 +35,10 @@ export async function playMediaWithPlanWithRuntime(
   );
 
   if (playMediaPlan.length === 0) {
-    throw new Error("当前页面未生成可执行的播放计划。");
+    throw new BrowserToolError(
+      "invalid_operation",
+      "当前页面未生成可执行的播放计划。",
+    );
   }
 
   const beforePrimary = beforeState.media[0];
@@ -163,7 +167,8 @@ export async function playMediaWithPlanWithRuntime(
     }
   }
 
-  throw new Error(
+  throw new BrowserToolError(
+    "action_verification_failed",
     `按播放计划尝试后仍未成功：${attempts
       .map((attempt) => {
         const target = attempt.selector ? `(${attempt.selector})` : "";
@@ -171,6 +176,10 @@ export async function playMediaWithPlanWithRuntime(
         return `${attempt.method}${target}${note}`;
       })
       .join(" | ")}`,
+    {
+      attempts,
+      planLength: playMediaPlan.length,
+    },
   );
 }
 

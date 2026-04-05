@@ -116,7 +116,7 @@ export function loadConfig(
       ),
       maxRetries: parseNonNegativeInteger(
         args.maxRetries ?? env.CHROME_MAX_RETRIES,
-        2,
+        0,
         "maxRetries",
       ),
       retryBackoffMs: parseInteger(
@@ -173,7 +173,7 @@ CLI 参数:
   --default-timeout-ms <ms>           元素操作超时，默认 15000
   --navigation-timeout-ms <ms>        页面导航超时，默认 30000
   --step-timeout-ms <ms>              单步动作超时，默认 12000
-  --max-retries <count>               单步最大重试次数，默认 2
+  --max-retries <count>               单步最大重试次数，默认 0；仅对显式允许自动重放的动作生效
   --retry-backoff-ms <ms>             单步重试退避基数，默认 400
   --action-settle-delay-ms <ms>       单步动作后稳定等待，默认 500
   --followup-watch-timeout-ms <ms>    popup/new_target 跟随观察上限，默认 2000

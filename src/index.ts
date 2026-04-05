@@ -1,3 +1,4 @@
+import type { Server as HttpServer } from "node:http";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -19,14 +20,83 @@ async function main(): Promise<void> {
 
   const config = loadConfig();
   const browserManager = new BrowserManager(config.chrome);
+  let httpServerHandle: HttpServerHandle | undefined;
 
   if (config.transport === "stdio") {
     await runStdioServer(config, browserManager);
   } else {
-    await runHttpServer(config, browserManager);
+    httpServerHandle = await runHttpServer(config, browserManager);
   }
 
-  setupShutdownHooks(browserManager);
+  setupShutdownHooks(browserManager, httpServerHandle);
+}
+
+interface HttpQueueSnapshot {
+  mode: "single_session_serialized";
+  totalRequests: number;
+  queuedRequests: number;
+  activeRequests: number;
+  activeLabel?: string;
+  lastStartedAt?: string;
+  lastCompletedAt?: string;
+}
+
+interface HttpServerHandle {
+  close(): Promise<void>;
+  snapshot(): HttpQueueSnapshot;
+}
+
+function createHttpRequestGate(): {
+  runExclusive<T>(label: string, task: () => Promise<T>): Promise<T>;
+  snapshot(): HttpQueueSnapshot;
+} {
+  let requestChain: Promise<void> = Promise.resolve();
+  let totalRequests = 0;
+  let queuedRequests = 0;
+  let activeRequests = 0;
+  let activeLabel: string | undefined;
+  let lastStartedAt: string | undefined;
+  let lastCompletedAt: string | undefined;
+
+  return {
+    async runExclusive<T>(label: string, task: () => Promise<T>): Promise<T> {
+      totalRequests += 1;
+      queuedRequests += 1;
+
+      const run = requestChain.catch(() => undefined).then(async () => {
+        queuedRequests = Math.max(0, queuedRequests - 1);
+        activeRequests += 1;
+        activeLabel = label;
+        lastStartedAt = new Date().toISOString();
+
+        try {
+          return await task();
+        } finally {
+          activeRequests = Math.max(0, activeRequests - 1);
+          activeLabel = activeRequests > 0 ? activeLabel : undefined;
+          lastCompletedAt = new Date().toISOString();
+        }
+      });
+
+      requestChain = run.then(
+        () => undefined,
+        () => undefined,
+      );
+
+      return run;
+    },
+    snapshot(): HttpQueueSnapshot {
+      return {
+        mode: "single_session_serialized",
+        totalRequests,
+        queuedRequests,
+        activeRequests,
+        activeLabel,
+        lastStartedAt,
+        lastCompletedAt,
+      };
+    },
+  };
 }
 
 async function runStdioServer(
@@ -44,8 +114,9 @@ async function runStdioServer(
 async function runHttpServer(
   config: AppConfig,
   browserManager: BrowserManager,
-): Promise<void> {
+): Promise<HttpServerHandle> {
   const app = createMcpExpressApp({ host: config.host });
+  const requestGate = createHttpRequestGate();
 
   app.get("/health", async (_req: Request, res: Response) => {
     const status = await browserManager.getStatus();
@@ -56,39 +127,43 @@ async function runHttpServer(
       host: config.host,
       port: config.port,
       browser: status,
+      httpQueue: requestGate.snapshot(),
+      uptimeSec: Math.round(process.uptime()),
     });
   });
 
   app.post("/mcp", async (req: Request, res: Response) => {
-    const server = createMcpServer(browserManager, {
-      toolMode: config.toolMode,
-    });
-
-    try {
-      const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: undefined,
+    await requestGate.runExclusive("mcp_request", async () => {
+      const server = createMcpServer(browserManager, {
+        toolMode: config.toolMode,
       });
 
-      await server.connect(transport);
-      await transport.handleRequest(req, res, req.body);
-
-      res.on("close", () => {
-        void transport.close();
-        void server.close();
-      });
-    } catch (error) {
-      console.error("[chrome-mcp] HTTP request failed:", error);
-      if (!res.headersSent) {
-        res.status(500).json({
-          jsonrpc: "2.0",
-          error: {
-            code: -32603,
-            message: "Internal server error",
-          },
-          id: null,
+      try {
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: undefined,
         });
+
+        res.on("close", () => {
+          void transport.close();
+          void server.close();
+        });
+
+        await server.connect(transport);
+        await transport.handleRequest(req, res, req.body);
+      } catch (error) {
+        console.error("[chrome-mcp] HTTP request failed:", error);
+        if (!res.headersSent) {
+          res.status(500).json({
+            jsonrpc: "2.0",
+            error: {
+              code: -32603,
+              message: "Internal server error",
+            },
+            id: null,
+          });
+        }
       }
-    }
+    });
   });
 
   app.get("/mcp", (_req: Request, res: Response) => {
@@ -113,32 +188,74 @@ async function runHttpServer(
     });
   });
 
-  await new Promise<void>((resolve, reject) => {
-    const instance = app.listen(config.port, config.host, (error?: Error) => {
-      if (error) {
-        reject(error);
-        return;
-      }
+  const instance = await new Promise<HttpServer>((resolve, reject) => {
+    const listeningInstance = app.listen(
+      config.port,
+      config.host,
+      (error?: Error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
 
-      console.error(
-        `[chrome-mcp] HTTP server started at http://${config.host}:${config.port}/mcp`,
-      );
-      resolve();
-    });
+        console.error(
+          `[chrome-mcp] HTTP server started at http://${config.host}:${config.port}/mcp`,
+        );
+        resolve(listeningInstance);
+      },
+    );
 
-    instance.on("error", reject);
+    listeningInstance.on("error", reject);
   });
+
+  return {
+    close: async () =>
+      new Promise<void>((resolve, reject) => {
+        if (!instance.listening) {
+          resolve();
+          return;
+        }
+
+        instance.close((error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+
+          resolve();
+        });
+      }),
+    snapshot: () => requestGate.snapshot(),
+  };
 }
 
-function setupShutdownHooks(browserManager: BrowserManager): void {
+function setupShutdownHooks(
+  browserManager: BrowserManager,
+  httpServerHandle?: HttpServerHandle,
+): void {
+  let shutdownPromise: Promise<void> | undefined;
+
   const shutdown = async (signal: string) => {
-    console.error(`[chrome-mcp] received ${signal}, closing browser...`);
-    try {
-      await browserManager.shutdown();
-    } catch (error) {
-      console.error("[chrome-mcp] shutdown failed:", error);
-      process.exitCode = 1;
+    if (shutdownPromise) {
+      return shutdownPromise;
     }
+
+    shutdownPromise = (async () => {
+      console.error(`[chrome-mcp] received ${signal}, closing resources...`);
+
+      try {
+        if (httpServerHandle) {
+          await httpServerHandle.close();
+        }
+
+        await browserManager.shutdown();
+      } catch (error) {
+        console.error("[chrome-mcp] shutdown failed:", error);
+        process.exitCode = 1;
+      }
+    })();
+
+    return shutdownPromise;
   };
 
   process.on("SIGINT", () => {

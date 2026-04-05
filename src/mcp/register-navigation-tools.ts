@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod/v4";
 import type { WaitUntilMode } from "../config.js";
 import { BrowserManager } from "../browser-manager.js";
-import { textResult, waitMatchModeSchema, waitUntilSchema } from "./shared.js";
+import { toolHandler, waitMatchModeSchema, waitUntilSchema } from "./shared.js";
 
 export function registerNavigationTools(
   server: McpServer,
@@ -20,10 +20,9 @@ export function registerNavigationTools(
           .describe("导航等待条件。"),
       }),
     },
-    async ({ url, pageId, waitUntil }) =>
-      textResult(
-        await browserManager.navigate(url, pageId, waitUntil as WaitUntilMode),
-      ),
+    toolHandler(async ({ url, pageId, waitUntil }) =>
+      browserManager.navigate(url, pageId, waitUntil as WaitUntilMode),
+    ),
   );
 
   server.registerTool(
@@ -37,10 +36,9 @@ export function registerNavigationTools(
           .describe("导航等待条件。"),
       }),
     },
-    async ({ pageId, waitUntil }) =>
-      textResult(
-        await browserManager.goBack(pageId, waitUntil as WaitUntilMode),
-      ),
+    toolHandler(async ({ pageId, waitUntil }) =>
+      browserManager.goBack(pageId, waitUntil as WaitUntilMode),
+    ),
   );
 
   server.registerTool(
@@ -54,10 +52,9 @@ export function registerNavigationTools(
           .describe("导航等待条件。"),
       }),
     },
-    async ({ pageId, waitUntil }) =>
-      textResult(
-        await browserManager.reloadPage(pageId, waitUntil as WaitUntilMode),
-      ),
+    toolHandler(async ({ pageId, waitUntil }) =>
+      browserManager.reloadPage(pageId, waitUntil as WaitUntilMode),
+    ),
   );
 
   server.registerTool(
@@ -113,18 +110,17 @@ export function registerNavigationTools(
           }
         }),
     },
-    async ({ pageId, selector, text, textSelector, title, url, matchMode, timeoutMs }) =>
-      textResult(
-        await browserManager.waitFor({
-          pageId,
-          selector,
-          text,
-          textSelector,
-          title,
-          url,
-          matchMode,
-          timeoutMs,
-        }),
-      ),
+    toolHandler(async ({ pageId, selector, text, textSelector, title, url, matchMode, timeoutMs }) =>
+      browserManager.waitFor({
+        pageId,
+        selector,
+        text,
+        textSelector,
+        title,
+        url,
+        matchMode,
+        timeoutMs,
+      }),
+    ),
   );
 }

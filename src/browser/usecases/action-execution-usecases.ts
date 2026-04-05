@@ -1,4 +1,5 @@
 import type { Page } from "puppeteer-core";
+import { BrowserToolError } from "../../errors.js";
 import type { BrowserRuntimeDeps } from "../session/runtime-deps.js";
 import {
   observeAction,
@@ -88,7 +89,12 @@ export async function runActionWithVerification(
     },
   );
 
-  throw new Error(
+  throw new BrowserToolError(
+    "action_verification_failed",
     `动作验证失败（重试 ${maxRetries + 1} 次后仍未通过）：${failureReasons.join(" | ") || "未知原因"}`,
+    {
+      attempts: maxRetries + 1,
+      failureReasons,
+    },
   );
 }

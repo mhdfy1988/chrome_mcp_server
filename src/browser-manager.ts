@@ -56,6 +56,7 @@ import type {
   ReadMediaStateResult,
 } from "./browser/discovery/types.js";
 import type { ActionPageSummary } from "./browser/execution/types.js";
+import type { TargetPreflightSummary } from "./browser/execution/types.js";
 import type { WaitMatchMode } from "./browser/observation/types.js";
 import type {
   ClickAndWaitResult,
@@ -67,6 +68,7 @@ import type {
   SubmitWithPlanResult,
 } from "./browser/usecases/types.js";
 import type { ChromeConfig, WaitUntilMode } from "./config.js";
+import { resolveActionTargetWithPreflight } from "./browser/execution/target-preflight.js";
 
 export class BrowserManager {
   private readonly session: BrowserSession;
@@ -328,6 +330,23 @@ export class BrowserManager {
     expression: string;
   }): Promise<EvaluateResult> {
     return evaluateWithRuntime(this.inspectionUsecaseDeps, options);
+  }
+
+  public async resolveActionTargetPreflight(options: {
+    selector?: string;
+    ref?: string;
+    pageId?: string;
+  }): Promise<{
+    page: PageSummary;
+    selector: string;
+    preflight: TargetPreflightSummary;
+  }> {
+    const resolved = await resolveActionTargetWithPreflight(this.runtimeDeps, options);
+    return {
+      page: await this.session.summarizePage(resolved.pageId, resolved.page),
+      selector: resolved.selector,
+      preflight: resolved.preflight,
+    };
   }
 
   public async screenshot(options: {

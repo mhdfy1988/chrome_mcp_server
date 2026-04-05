@@ -1,4 +1,5 @@
 import type { BrowserRuntimeDeps } from "../session/runtime-deps.js";
+import { BrowserToolError } from "../../errors.js";
 import type { NavigateResult, PageSummary } from "../state/types.js";
 import type { WaitMatchMode } from "../observation/types.js";
 import {
@@ -149,8 +150,10 @@ export async function waitForWithRuntime(
     const guidance = describeVerificationAction(
       initialPageState.verification?.recommendedAction ?? "manual_resume",
     );
-    throw new Error(
+    throw new BrowserToolError(
+      "blocked_by_verification",
       `页面当前处于验证拦截状态（blocked_by_verification，provider=${providerHint}，evidence=${evidence}）。${guidance}`,
+      initialPageState.verification,
     );
   }
 
@@ -160,8 +163,10 @@ export async function waitForWithRuntime(
     const guidance = describeAuthRequiredAction(
       initialPageState.authRequired?.recommendedAction ?? "manual_login",
     );
-    throw new Error(
+    throw new BrowserToolError(
+      "auth_required",
       `页面当前处于登录拦截状态（auth_required，kind=${kind}，evidence=${evidence}）。${guidance}`,
+      initialPageState.authRequired,
     );
   }
 
@@ -265,8 +270,10 @@ export async function waitForWithRuntime(
       const guidance = describeVerificationAction(
         pageState.verification?.recommendedAction ?? "manual_resume",
       );
-      throw new Error(
+      throw new BrowserToolError(
+        "blocked_by_verification",
         `页面当前处于验证拦截状态（blocked_by_verification，provider=${providerHint}，evidence=${evidence}）。${guidance}`,
+        pageState.verification,
       );
     }
 
@@ -276,8 +283,10 @@ export async function waitForWithRuntime(
       const guidance = describeAuthRequiredAction(
         pageState.authRequired?.recommendedAction ?? "manual_login",
       );
-      throw new Error(
+      throw new BrowserToolError(
+        "auth_required",
         `页面当前处于登录拦截状态（auth_required，kind=${kind}，evidence=${evidence}）。${guidance}`,
+        pageState.authRequired,
       );
     }
 

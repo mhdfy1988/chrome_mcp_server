@@ -3,7 +3,7 @@ import * as z from "zod/v4";
 import type { WaitUntilMode } from "../config.js";
 import type { ToolMode } from "../config.js";
 import { BrowserManager } from "../browser-manager.js";
-import { textResult, waitMatchModeSchema, waitUntilSchema } from "./shared.js";
+import { toolHandler, waitMatchModeSchema, waitUntilSchema } from "./shared.js";
 
 export function registerInteractionTools(
   server: McpServer,
@@ -35,14 +35,13 @@ export function registerInteractionTools(
           .describe("最多尝试关闭多少个候选控件。"),
       }),
     },
-    async ({ pageId, timeoutMs, maxSteps }) =>
-      textResult(
-        await browserManager.dismissBlockingOverlays({
-          pageId,
-          timeoutMs,
-          maxSteps,
-        }),
-      ),
+    toolHandler(async ({ pageId, timeoutMs, maxSteps }) =>
+      browserManager.dismissBlockingOverlays({
+        pageId,
+        timeoutMs,
+        maxSteps,
+      }),
+    ),
   );
 
   server.registerTool(
@@ -81,15 +80,14 @@ export function registerInteractionTools(
           }
         }),
     },
-    async ({ pageId, ref, selector, timeoutMs }) =>
-      textResult(
-        await browserManager.click({
-          pageId,
-          ref,
-          selector,
-          timeoutMs,
-        }),
-      ),
+    toolHandler(async ({ pageId, ref, selector, timeoutMs }) =>
+      browserManager.click({
+        pageId,
+        ref,
+        selector,
+        timeoutMs,
+      }),
+    ),
   );
 
   server.registerTool(
@@ -169,7 +167,7 @@ export function registerInteractionTools(
           }
         }),
     },
-    async ({
+    toolHandler(async ({
       pageId,
       ref,
       selector,
@@ -185,24 +183,23 @@ export function registerInteractionTools(
       contentReadyTimeoutMs,
       matchMode,
     }) =>
-      textResult(
-        await browserManager.clickAndWait({
-          pageId,
-          ref,
-          selector,
-          timeoutMs,
-          waitForNavigation,
-          waitUntil: waitUntil as WaitUntilMode,
-          waitForSelector,
-          waitForTitle,
-          waitForUrl,
-          contentReadySelector,
-          contentReadyText,
-          contentReadyTextSelector,
-          contentReadyTimeoutMs,
-          matchMode,
-        }),
-      ),
+      browserManager.clickAndWait({
+        pageId,
+        ref,
+        selector,
+        timeoutMs,
+        waitForNavigation,
+        waitUntil: waitUntil as WaitUntilMode,
+        waitForSelector,
+        waitForTitle,
+        waitForUrl,
+        contentReadySelector,
+        contentReadyText,
+        contentReadyTextSelector,
+        contentReadyTimeoutMs,
+        matchMode,
+      }),
+    ),
   );
 
   server.registerTool(
@@ -250,18 +247,17 @@ export function registerInteractionTools(
           }
         }),
     },
-    async ({ pageId, ref, selector, text, clear, submit, timeoutMs }) =>
-      textResult(
-        await browserManager.typeText({
-          pageId,
-          ref,
-          selector,
-          text,
-          clear,
-          submit,
-          timeoutMs,
-        }),
-      ),
+    toolHandler(async ({ pageId, ref, selector, text, clear, submit, timeoutMs }) =>
+      browserManager.typeText({
+        pageId,
+        ref,
+        selector,
+        text,
+        clear,
+        submit,
+        timeoutMs,
+      }),
+    ),
   );
 
   server.registerTool(
@@ -273,8 +269,9 @@ export function registerInteractionTools(
         key: z.string().min(1).describe("按键名称。"),
       }),
     },
-    async ({ pageId, key }) =>
-      textResult(await browserManager.pressKey(key, pageId)),
+    toolHandler(async ({ pageId, key }) =>
+      browserManager.pressKey(key, pageId),
+    ),
   );
 
   server.registerTool(
@@ -335,7 +332,7 @@ export function registerInteractionTools(
           .describe("标题和 URL 的匹配方式，支持 contains 或 exact。"),
       }),
     },
-    async ({
+    toolHandler(async ({
       pageId,
       key,
       timeoutMs,
@@ -350,23 +347,22 @@ export function registerInteractionTools(
       contentReadyTimeoutMs,
       matchMode,
     }) =>
-      textResult(
-        await browserManager.pressKeyAndWait({
-          pageId,
-          key,
-          timeoutMs,
-          waitForNavigation,
-          waitUntil: waitUntil as WaitUntilMode,
-          waitForSelector,
-          waitForTitle,
-          waitForUrl,
-          contentReadySelector,
-          contentReadyText,
-          contentReadyTextSelector,
-          contentReadyTimeoutMs,
-          matchMode,
-        }),
-      ),
+      browserManager.pressKeyAndWait({
+        pageId,
+        key,
+        timeoutMs,
+        waitForNavigation,
+        waitUntil: waitUntil as WaitUntilMode,
+        waitForSelector,
+        waitForTitle,
+        waitForUrl,
+        contentReadySelector,
+        contentReadyText,
+        contentReadyTextSelector,
+        contentReadyTimeoutMs,
+        matchMode,
+      }),
+    ),
   );
 
   if (options.toolMode === "advanced") {
@@ -454,7 +450,7 @@ export function registerInteractionTools(
             }
           }),
       },
-      async ({
+      toolHandler(async ({
         pageId,
         ref,
         selector,
@@ -471,25 +467,24 @@ export function registerInteractionTools(
         matchMode,
         maxPlanSteps,
       }) =>
-        textResult(
-          await browserManager.submitWithPlan({
-            pageId,
-            ref,
-            selector,
-            timeoutMs,
-            waitForNavigation,
-            waitUntil: waitUntil as WaitUntilMode,
-            waitForSelector,
-            waitForTitle,
-            waitForUrl,
-            contentReadySelector,
-            contentReadyText,
-            contentReadyTextSelector,
-            contentReadyTimeoutMs,
-            matchMode,
-            maxPlanSteps,
-          }),
-        ),
+        browserManager.submitWithPlan({
+          pageId,
+          ref,
+          selector,
+          timeoutMs,
+          waitForNavigation,
+          waitUntil: waitUntil as WaitUntilMode,
+          waitForSelector,
+          waitForTitle,
+          waitForUrl,
+          contentReadySelector,
+          contentReadyText,
+          contentReadyTextSelector,
+          contentReadyTimeoutMs,
+          matchMode,
+          maxPlanSteps,
+        }),
+      ),
     );
 
     server.registerTool(
@@ -509,14 +504,13 @@ export function registerInteractionTools(
             .describe("等待输入框可见的超时时间。"),
         }),
       },
-      async ({ pageId, selector, timeoutMs }) =>
-        textResult(
-          await browserManager.submitInput({
-            pageId,
-            selector,
-            timeoutMs,
-          }),
-        ),
+      toolHandler(async ({ pageId, selector, timeoutMs }) =>
+        browserManager.submitInput({
+          pageId,
+          selector,
+          timeoutMs,
+        }),
+      ),
     );
   }
 }

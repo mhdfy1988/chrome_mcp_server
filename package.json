@@ -1,6 +1,6 @@
 {
   "name": "chrome_mcp_server",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "用于 Codex 和 OpenClaw 的 Chrome 浏览器 MCP Server",
   "type": "module",
   "main": "dist/index.js",

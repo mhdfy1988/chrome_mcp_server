@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod/v4";
 import { BrowserManager } from "../browser-manager.js";
-import { textResult } from "./shared.js";
+import { toolHandler } from "./shared.js";
 
 export function registerBrowserTools(
   server: McpServer,
@@ -16,7 +16,7 @@ export function registerBrowserTools(
         idempotentHint: true,
       },
     },
-    async () => textResult(await browserManager.getStatus()),
+    toolHandler(async () => browserManager.getStatus()),
   );
 
   server.registerTool(
@@ -28,7 +28,7 @@ export function registerBrowserTools(
         idempotentHint: true,
       },
     },
-    async () => textResult(await browserManager.listPages()),
+    toolHandler(async () => browserManager.listPages()),
   );
 
   server.registerTool(
@@ -39,7 +39,7 @@ export function registerBrowserTools(
         url: z.url().optional().describe("可选，要直接打开的 URL。"),
       }),
     },
-    async ({ url }) => textResult(await browserManager.openPage(url)),
+    toolHandler(async ({ url }) => browserManager.openPage(url)),
   );
 
   server.registerTool(
@@ -50,7 +50,7 @@ export function registerBrowserTools(
         pageId: z.string().min(1).describe("要切换到的页面 ID。"),
       }),
     },
-    async ({ pageId }) => textResult(await browserManager.selectPage(pageId)),
+    toolHandler(async ({ pageId }) => browserManager.selectPage(pageId)),
   );
 
   server.registerTool(
@@ -64,7 +64,7 @@ export function registerBrowserTools(
         destructiveHint: true,
       },
     },
-    async ({ pageId }) => textResult(await browserManager.closePage(pageId)),
+    toolHandler(async ({ pageId }) => browserManager.closePage(pageId)),
   );
 
   server.registerTool(
@@ -75,6 +75,6 @@ export function registerBrowserTools(
         destructiveHint: true,
       },
     },
-    async () => textResult(await browserManager.closeBrowser()),
+    toolHandler(async () => browserManager.closeBrowser()),
   );
 }

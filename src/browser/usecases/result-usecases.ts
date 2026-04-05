@@ -1,4 +1,5 @@
 import type { WaitUntilMode } from "../../config.js";
+import { BrowserToolError } from "../../errors.js";
 import { clickResolvedTarget } from "../execution/safe-click.js";
 import type { ActionAttemptSummary } from "../execution/types.js";
 import type { WaitMatchMode } from "../observation/types.js";
@@ -52,7 +53,10 @@ export async function openResultWithPlanWithRuntime(
   );
 
   if (openResultPlan.length === 0) {
-    throw new Error("当前页面未生成可执行的打开结果计划。");
+    throw new BrowserToolError(
+      "invalid_operation",
+      "当前页面未生成可执行的打开结果计划。",
+    );
   }
 
   const timeoutMs = options.timeoutMs ?? deps.config.stepTimeoutMs;
@@ -182,7 +186,8 @@ export async function openResultWithPlanWithRuntime(
     }
   }
 
-  throw new Error(
+  throw new BrowserToolError(
+    "action_verification_failed",
     `按结果计划尝试后仍未成功：${attempts
       .map((attempt) => {
         const target = attempt.selector ? `(${attempt.selector})` : "";
@@ -190,6 +195,10 @@ export async function openResultWithPlanWithRuntime(
         return `${attempt.method}${target}${note}`;
       })
       .join(" | ")}`,
+    {
+      attempts,
+      planLength: openResultPlan.length,
+    },
   );
 }
 
