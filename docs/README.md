@@ -77,7 +77,7 @@
 2. `src/browser/README.md`
    - 看当前代码分层和主链落地情况。
 3. `architecture/发布后阶段计划.md`
-   - 看 `v1.1.0` 之后按什么顺序推进最合理。
+   - 看当前版本之后按什么顺序推进最合理。
 4. `architecture/*.md`
    - 看设计背景、层次职责和为什么这样拆。
 5. `testing/*.md`
