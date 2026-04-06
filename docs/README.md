@@ -12,9 +12,11 @@
    - [../src/browser/README.md](../src/browser/README.md)
 3. 架构主方案：
    - [architecture/浏览器动作架构重构方案.md](architecture/浏览器动作架构重构方案.md)
-4. 实施与落地收口：
+4. 发布后阶段计划：
+   - [architecture/发布后阶段计划.md](architecture/发布后阶段计划.md)
+5. 实施与落地收口：
    - [architecture/浏览器动作重构实施方案.md](architecture/浏览器动作重构实施方案.md)
-5. 实战回归清单：
+6. 实战回归清单：
    - [testing/实战检验清单.md](testing/实战检验清单.md)
 
 ## 目录结构
@@ -26,6 +28,7 @@
 重点文档：
 
 - [architecture/浏览器动作架构重构方案.md](architecture/浏览器动作架构重构方案.md)
+- [architecture/发布后阶段计划.md](architecture/发布后阶段计划.md)
 - [architecture/浏览器动作重构实施方案.md](architecture/浏览器动作重构实施方案.md)
 - [architecture/项目结构与整体架构对应关系.md](architecture/项目结构与整体架构对应关系.md)
 - [architecture/浏览器动作重构整体架构图.svg](architecture/浏览器动作重构整体架构图.svg)
@@ -73,9 +76,11 @@
    - 看项目对外能力、启动方式、接入方式、当前边界。
 2. `src/browser/README.md`
    - 看当前代码分层和主链落地情况。
-3. `architecture/*.md`
+3. `architecture/发布后阶段计划.md`
+   - 看 `v1.1.0` 之后按什么顺序推进最合理。
+4. `architecture/*.md`
    - 看设计背景、层次职责和为什么这样拆。
-4. `testing/*.md`
+5. `testing/*.md`
    - 看回归范围、真实站点进度和任务规格。
 
 ## 如果你现在要改代码
